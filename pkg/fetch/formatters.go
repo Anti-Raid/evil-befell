@@ -20,6 +20,27 @@ func getMapKeys[V any](m map[string]V) []string {
 	return keys
 }
 
+func fmtMap[K comparable, V any](m map[K]V) string {
+	var sb strings.Builder
+
+	sb.WriteString("{")
+
+	var i = 0
+	for k, v := range m {
+		sb.WriteString(fmt.Sprintf("%v: %v", k, v))
+
+		if i < len(m)-1 {
+			sb.WriteString(", ")
+		}
+
+		i++
+	}
+
+	sb.WriteString("}")
+
+	return sb.String()
+}
+
 type PermissionCheckFormatter struct {
 	PermCheck silverpelt.PermissionCheck
 }
@@ -85,28 +106,11 @@ func (pcf *PermissionCheckFormatter) String() string {
 	return result.String()
 }
 
-type PermissionResult struct {
-	Var           string
-	Message       string
-	Check         *silverpelt.PermissionCheck
-	CommandConfig *CommandConfig
-	ModuleConfig  *ModuleConfig
-	Error         string
-}
-
-type CommandConfig struct {
-	Command string
-}
-
-type ModuleConfig struct {
-	Module string
-}
-
 type PermissionResultFormatter struct {
-	Result PermissionResult
+	Result silverpelt.PermissionResult
 }
 
-func NewPermissionResultFormatter(result PermissionResult) *PermissionResultFormatter {
+func NewPermissionResultFormatter(result silverpelt.PermissionResult) *PermissionResultFormatter {
 	return &PermissionResultFormatter{Result: result}
 }
 

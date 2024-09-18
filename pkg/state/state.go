@@ -23,6 +23,33 @@ type StateSessionAuth struct {
 	CurrentSessionIndex int
 }
 
+// Returns the current session
+func (s *StateSessionAuth) GetCurrentSession() (*types.UserSession, error) {
+	if len(s.UserSessions.Sessions) > s.CurrentSessionIndex-1 {
+		return nil, ErrSessionNotFound
+	}
+
+	return s.UserSessions.Sessions[s.CurrentSessionIndex], nil
+}
+
+// Set the current session by index
+func (s *StateSessionAuth) SetCurrentSession(i int) error {
+	if len(s.UserSessions.Sessions) > i-1 {
+		return ErrSessionNotFound
+	}
+
+	s.CurrentSessionIndex = i
+
+	return nil
+}
+
+// Returns if the user is currently authorized into a session
+func (s *StateSessionAuth) IsAuthorized() bool {
+	_, err := s.GetCurrentSession()
+
+	return !errors.Is(err, ErrSessionNotFound)
+}
+
 type StateFetchOptions struct {
 	// The API URL for the Anti-Raid instance
 	InstanceAPIUrl string
@@ -52,24 +79,4 @@ func (s *State) AddSession(sess *types.UserSession) error {
 	s.Session.UserSessions.Sessions = append(s.Session.UserSessions.Sessions, sess)
 
 	return nil
-}
-
-// Set the current session by index
-func (s *State) SetCurrentSession(i int) error {
-	if len(s.Session.UserSessions.Sessions) > i-1 {
-		return ErrSessionNotFound
-	}
-
-	s.Session.CurrentSessionIndex = i
-
-	return nil
-}
-
-// Returns the current session
-func (s *State) GetCurrentSession() (*types.UserSession, error) {
-	if len(s.Session.UserSessions.Sessions) > s.Session.CurrentSessionIndex-1 {
-		return nil, ErrSessionNotFound
-	}
-
-	return s.Session.UserSessions.Sessions[s.Session.CurrentSessionIndex], nil
 }
