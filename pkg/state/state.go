@@ -1,9 +1,9 @@
 package state
 
 import (
-	"encoding/json"
 	"errors"
 
+	"github.com/anti-raid/evil-befall/pkg/loc"
 	"github.com/anti-raid/evil-befall/types"
 )
 
@@ -21,6 +21,17 @@ type StateSessionAuth struct {
 
 	// The current session index
 	CurrentSessionIndex int
+}
+
+// Add a new session, returns an error if token is not set
+func (s *StateSessionAuth) AddSession(sess *types.UserSession) error {
+	if sess.Token == nil {
+		return ErrSessionHasNoToken
+	}
+
+	s.UserSessions.Sessions = append(s.UserSessions.Sessions, sess)
+
+	return nil
 }
 
 // Returns the current session
@@ -58,25 +69,19 @@ type StateFetchOptions struct {
 // Stores all the state for the application
 type State struct {
 	// The current location Evil Befall is at
-	CurrentLoc string
+	CurrentLoc *loc.LocMetadata
 
 	// Session auth
 	Session StateSessionAuth
-
-	// Per location JSON data
-	LocationData map[string]json.RawMessage
 
 	// State fetch options
 	StateFetchOptions StateFetchOptions
 }
 
-// Add a new session, returns an error if token is not set
-func (s *State) AddSession(sess *types.UserSession) error {
-	if sess.Token == nil {
-		return ErrSessionHasNoToken
+func NewState() *State {
+	return &State{
+		CurrentLoc: &loc.LocMetadata{
+			ID: "root",
+		},
 	}
-
-	s.Session.UserSessions.Sessions = append(s.Session.UserSessions.Sessions, sess)
-
-	return nil
 }
