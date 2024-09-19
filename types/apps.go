@@ -3,7 +3,7 @@ package types
 import (
 	"time"
 
-	"github.com/anti-raid/evil-befall/types/dovetypes"
+	"github.com/infinitybotlist/eureka/dovewing/dovetypes"
 )
 
 type Question struct {

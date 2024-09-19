@@ -18,16 +18,16 @@ type LoginRoute struct {
 	ctxCancelFunc context.CancelFunc
 }
 
-func (r *LoginRoute) ID() string {
+func (r *LoginRoute) Command() string {
 	return "login"
 }
 
-func (r *LoginRoute) Title() string {
-	return "Root"
+func (r *LoginRoute) Description() string {
+	return "Log in to an Anti-Raid instance"
 }
 
-func (r *LoginRoute) Description() string {
-	return "The root route"
+func (r *LoginRoute) Arguments() [][3]string {
+	return [][3]string{}
 }
 
 func (r *LoginRoute) Setup(state *state.State) error {
@@ -43,7 +43,7 @@ func (r *LoginRoute) Destroy(state *state.State) error {
 	return nil
 }
 
-func (r *LoginRoute) Render(state *state.State, app *tview.Application, pages *tview.Pages) (tview.Primitive, error) {
+func (r *LoginRoute) Render(state *state.State, app *tview.Application, args map[string]string) error {
 	loginStatusBox := tview.NewTextView()
 	loginStatusWriter := statusbox.NewStatusBox(r.ctx, loginStatusBox)
 
@@ -90,6 +90,8 @@ func (r *LoginRoute) Render(state *state.State, app *tview.Application, pages *t
 		}
 
 		loginStatusWriter.AddStatusMessage("Session created: " + ul.UserID)
+
+		app.Stop()
 	})
 
 	form.AddButton("Exit", func() {
@@ -102,5 +104,11 @@ func (r *LoginRoute) Render(state *state.State, app *tview.Application, pages *t
 	// Add the status box to the grid below the form taking up the remaining screen width and height
 	grid.AddItem(loginStatusBox, 1, 0, 1, 3, 0, 0, false)
 
-	return grid, nil
+	app.SetRoot(grid, true)
+
+	if err := app.Run(); err != nil {
+		return err
+	}
+
+	return nil
 }

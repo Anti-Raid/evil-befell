@@ -11,7 +11,7 @@ import (
 // Format of the location string: "route_id?[JSON data]"
 type LocMetadata struct {
 	ID   string
-	Data map[string]any
+	Data map[string]string
 }
 
 func (loc *LocMetadata) MarshalJSON() ([]byte, error) {

@@ -66,6 +66,12 @@ type StateFetchOptions struct {
 	InstanceAPIUrl string
 }
 
+type UserPref struct {
+	MouseEnabledInTView      bool
+	PasteEnabledInTView      bool
+	FullscreenEnabledInTView bool
+}
+
 // Stores all the state for the application
 type State struct {
 	// The current location Evil Befall is at
@@ -78,6 +84,8 @@ type State struct {
 	StateFetchOptions StateFetchOptions
 
 	BindAddr string // Bind address with login/logout etc.
+
+	Prefs UserPref
 }
 
 func NewState() *State {

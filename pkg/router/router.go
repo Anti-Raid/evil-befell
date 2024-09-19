@@ -8,15 +8,23 @@ import (
 	"github.com/rivo/tview"
 )
 
+var (
+	ErrRouteNotFound = errors.New("route not found")
+)
+
 var routes = []Route{}
 
 func AddRoute(r Route) {
 	routes = append(routes, r)
 }
 
+func Routes() []Route {
+	return routes
+}
+
 func GetRoute(id string) Route {
 	for _, r := range routes {
-		if r.ID() == id {
+		if r.Command() == id {
 			return r
 		}
 	}
@@ -27,7 +35,7 @@ func GetRoute(id string) Route {
 // Get current route
 func GetCurrentRoute(state *state.State) Route {
 	for _, route := range routes {
-		if state.CurrentLoc.ID == route.ID() {
+		if state.CurrentLoc.ID == route.Command() {
 			return route
 		}
 	}
@@ -36,59 +44,54 @@ func GetCurrentRoute(state *state.State) Route {
 }
 
 // Goto page based on the states current location
-func GotoCurrent(state *state.State, app *tview.Application, pages *tview.Pages) (Route, error) {
+func GotoCurrent(state *state.State, app *tview.Application, args map[string]string) (Route, error) {
 	for _, route := range routes {
-		if state.CurrentLoc.ID == route.ID() {
-			return Goto(state, route.ID(), app, pages)
+		if state.CurrentLoc.ID == route.Command() {
+			return route, Goto(route.Command(), state, app, args)
 		}
 	}
 
 	return nil, errors.New("route not found")
 }
 
-// Goto page by ID
-func Goto(state *state.State, id string, app *tview.Application, pages *tview.Pages) (Route, error) {
+func Goto(id string, state *state.State, app *tview.Application, args map[string]string) error {
+	// Update the state
+	state.CurrentLoc.ID = id
+	state.CurrentLoc.Data = args
+
 	// Get current route
 	currentRoute := GetCurrentRoute(state)
 
 	// If the current route is not nil, destroy it
-	if currentRoute != nil {
+	if currentRoute != nil && currentRoute.Command() != id {
 		if err := currentRoute.Destroy(state); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	var route = GetRoute(id)
+	r := GetRoute(id)
 
-	if route == nil {
-		return nil, errors.New("route not found")
+	if r == nil {
+		return ErrRouteNotFound
 	}
 
-	if err := route.Setup(state); err != nil {
-		return nil, err
+	if err := r.Setup(state); err != nil {
+		return err
 	}
 
-	page, err := route.Render(state, app, pages)
-
-	if err != nil {
-		return nil, err
-	}
-
-	pages.AddAndSwitchToPage(id, page, true)
-	app.SetFocus(page)
-
-	return route, nil
+	return r.Render(state, app, args)
 }
 
 type Route interface {
-	// The ID of the route
-	ID() string
-
-	// The title of the route
-	Title() string
+	// The command name of the route
+	Command() string
 
 	// The description of the route
 	Description() string
+
+	// The arguments the route can take
+	// [][3]string // Map of argument to the description and default value
+	Arguments() [][3]string
 
 	// Given a current state, sets up all state for the route
 	Setup(state *state.State) error
@@ -96,6 +99,6 @@ type Route interface {
 	// Called on destruction of the route
 	Destroy(state *state.State) error
 
-	// Renders the route returning a tview.Primitive
-	Render(state *state.State, app *tview.Application, pages *tview.Pages) (tview.Primitive, error)
+	// Renders the route
+	Render(state *state.State, app *tview.Application, args map[string]string) error
 }

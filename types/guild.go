@@ -1,6 +1,6 @@
 package types
 
-import "github.com/anti-raid/evil-befall/types/dovetypes"
+import "github.com/infinitybotlist/eureka/dovewing/dovetypes"
 
 type DashboardGuild struct {
 	ID          string `json:"id" description:"The ID of the guild"`
