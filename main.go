@@ -7,15 +7,12 @@ import (
 
 	"github.com/anti-raid/evil-befall/pkg/router"
 	_ "github.com/anti-raid/evil-befall/pkg/routes"
-	"github.com/anti-raid/evil-befall/pkg/state"
 	statelib "github.com/anti-raid/evil-befall/pkg/state"
 	"github.com/infinitybotlist/eureka/shellcli"
-	"github.com/rivo/tview"
 )
 
 type cliData struct {
-	State *state.State
-	TView *tview.Application
+	State *statelib.State
 }
 
 func envOrBool(key, fallback string) string {
@@ -41,8 +38,6 @@ func main() {
 		FullscreenEnabledInTView: fullscreen,
 	}
 
-	var app = tview.NewApplication().EnableMouse(mouseEnabled).EnablePaste(pasteEnabled)
-
 	// Create command list
 	var commands = make(map[string]*shellcli.Command[cliData])
 
@@ -51,7 +46,7 @@ func main() {
 			Description: route.Description(),
 			Args:        route.Arguments(),
 			Run: func(cli *shellcli.ShellCli[cliData], args map[string]string) error {
-				return router.Goto(route.Command(), cli.Data.State, cli.Data.TView, args)
+				return router.Goto(route.Command(), cli.Data.State, args)
 			},
 		}
 	}
@@ -59,7 +54,6 @@ func main() {
 	root := &shellcli.ShellCli[cliData]{
 		Data: &cliData{
 			State: state,
-			TView: app,
 		},
 		Prompter: func(r *shellcli.ShellCli[cliData]) string {
 			return "evil-befall> "

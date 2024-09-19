@@ -17,35 +17,31 @@ type StateSessionAuth struct {
 	//
 	// Because Evil Befall can technically support multiple sessions, we can just store the raw UserSessionList
 	// object here
-	UserSessions *types.UserSessionList
+	UserSessions []*types.CreateUserSessionResponse
 
 	// The current session index
 	CurrentSessionIndex int
 }
 
 // Add a new session, returns an error if token is not set
-func (s *StateSessionAuth) AddSession(sess *types.UserSession) error {
-	if sess.Token == nil {
-		return ErrSessionHasNoToken
-	}
-
-	s.UserSessions.Sessions = append(s.UserSessions.Sessions, sess)
+func (s *StateSessionAuth) AddSession(sess *types.CreateUserSessionResponse) error {
+	s.UserSessions = append(s.UserSessions, sess)
 
 	return nil
 }
 
 // Returns the current session
-func (s *StateSessionAuth) GetCurrentSession() (*types.UserSession, error) {
-	if len(s.UserSessions.Sessions) > s.CurrentSessionIndex-1 {
+func (s *StateSessionAuth) GetCurrentSession() (*types.CreateUserSessionResponse, error) {
+	if len(s.UserSessions) > s.CurrentSessionIndex-1 {
 		return nil, ErrSessionNotFound
 	}
 
-	return s.UserSessions.Sessions[s.CurrentSessionIndex], nil
+	return s.UserSessions[s.CurrentSessionIndex], nil
 }
 
 // Set the current session by index
 func (s *StateSessionAuth) SetCurrentSession(i int) error {
-	if len(s.UserSessions.Sessions) > i-1 {
+	if len(s.UserSessions) > i-1 {
 		return ErrSessionNotFound
 	}
 

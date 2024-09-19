@@ -22,8 +22,8 @@ func GetAuthURL(ctx context.Context, state *state.State, apiConfig *types.ApiCon
 	return inviteURL
 }
 
-func CreateSessionOnServerAddr(ctx context.Context, state *state.State) (*types.UserLogin, error) {
-	var createdSessionChan = make(chan *types.UserLogin)
+func CreateSessionOnServerAddr(ctx context.Context, state *state.State) (*types.CreateUserSessionResponse, error) {
+	var createdSessionChan = make(chan *types.CreateUserSessionResponse)
 
 	mux := http.NewServeMux()
 

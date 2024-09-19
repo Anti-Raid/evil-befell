@@ -2,13 +2,14 @@ package login
 
 import (
 	"context"
-	"strconv"
+	"fmt"
+	"log/slog"
 
 	"github.com/anti-raid/evil-befall/pkg/api/core"
 	"github.com/anti-raid/evil-befall/pkg/auth"
 	"github.com/anti-raid/evil-befall/pkg/constants"
 	"github.com/anti-raid/evil-befall/pkg/state"
-	"github.com/anti-raid/evil-befall/pkg/statusbox"
+	"github.com/anti-raid/evil-befall/pkg/tui"
 	"github.com/pkg/browser"
 	"github.com/rivo/tview"
 )
@@ -39,15 +40,15 @@ func (r *LoginRoute) Setup(state *state.State) error {
 }
 
 func (r *LoginRoute) Destroy(state *state.State) error {
-	r.ctxCancelFunc()
+	if r.ctxCancelFunc != nil {
+		r.ctxCancelFunc()
+	}
 	return nil
 }
 
-func (r *LoginRoute) Render(state *state.State, app *tview.Application, args map[string]string) error {
-	loginStatusBox := tview.NewTextView()
-	loginStatusWriter := statusbox.NewStatusBox(r.ctx, loginStatusBox)
-
-	grid := tview.NewGrid().SetColumns(0, 0, 0).SetRows(0, 0, 0)
+func (r *LoginRoute) Render(state *state.State, args map[string]string) error {
+	var continueChan = make(chan bool)
+	var doneChan = make(chan struct{})
 
 	form := tview.NewForm()
 
@@ -55,60 +56,74 @@ func (r *LoginRoute) Render(state *state.State, app *tview.Application, args map
 	form.AddInputField("Instance URL", constants.DefaultInstanceUrl, 0, nil, nil)
 
 	// Create a new button for login
-	i := 0
 	form.AddButton("Login", func() {
-		instanceUrl := form.GetFormItem(0).(*tview.InputField).GetText()
-		if instanceUrl == "" {
-			panic("Instance URL is required")
-		}
-
-		state.StateFetchOptions.InstanceAPIUrl = instanceUrl
-
-		loginStatusWriter.AddStatusMessage("Logging in... | Attempt #" + strconv.Itoa(i))
-		i++
-
-		apiConfig, err := core.GetApiConfig(r.ctx, state)
-
-		if err != nil {
-			loginStatusWriter.AddStatusMessage("Failed to get API config: " + err.Error())
-			return
-		}
-
-		loginUrl := auth.GetAuthURL(r.ctx, state, apiConfig)
-
-		loginStatusWriter.AddStatusMessage("Login URL: " + loginUrl)
-
-		if err := browser.OpenURL(loginUrl); err != nil {
-			loginStatusWriter.AddStatusMessage("Failed to open browser: " + err.Error())
-		}
-
-		ul, err := auth.CreateSessionOnServerAddr(r.ctx, state)
-
-		if err != nil {
-			loginStatusWriter.AddStatusMessage("Failed to create session: " + err.Error())
-			return
-		}
-
-		loginStatusWriter.AddStatusMessage("Session created: " + ul.UserID)
-
-		app.Stop()
+		continueChan <- true
 	})
 
 	form.AddButton("Exit", func() {
-		app.Stop()
+		continueChan <- false
 	})
 
-	// Add the form to the grid
-	grid.AddItem(form, 0, 0, 1, 3, 0, 0, true)
+	app := tui.NewTview(state)
+	app.SetRoot(form, true)
 
-	// Add the status box to the grid below the form taking up the remaining screen width and height
-	grid.AddItem(loginStatusBox, 1, 0, 1, 3, 0, 0, false)
+	go func() {
+		for {
+			select {
+			case v := <-continueChan:
+				app.Stop()
+				if v {
+					instanceUrl := form.GetFormItemByLabel("Instance URL").(*tview.InputField).GetText()
+					state.StateFetchOptions.InstanceAPIUrl = instanceUrl
+					err := execLogin(r, state)
+					if err != nil {
+						slog.Error("Failed to login", slog.String("err", err.Error()))
+					}
+				}
 
-	app.SetRoot(grid, true)
+				doneChan <- struct{}{}
+			case <-r.ctx.Done():
+				app.Stop()
+				doneChan <- struct{}{}
+			}
+		}
+	}()
 
 	if err := app.Run(); err != nil {
 		return err
 	}
+
+	<-doneChan
+
+	return nil
+}
+
+func execLogin(r *LoginRoute, state *state.State) error {
+	slog.Info("Fetching API config", slog.String("instanceUrl", state.StateFetchOptions.InstanceAPIUrl))
+
+	apiConfig, err := core.GetApiConfig(r.ctx, state)
+
+	if err != nil {
+		return err
+	}
+
+	loginUrl := auth.GetAuthURL(r.ctx, state, apiConfig)
+
+	slog.Info("Please visit the following url and login", slog.String("loginUrl", loginUrl))
+
+	if err := browser.OpenURL(loginUrl); err != nil {
+		slog.Error("Failed to open browser", slog.String("err", err.Error()))
+	}
+
+	ul, err := auth.CreateSessionOnServerAddr(r.ctx, state)
+
+	if err != nil {
+		return fmt.Errorf("failed to create session: %w", err)
+	}
+
+	slog.Info("Session created", slog.String("userId", ul.UserID), slog.String("sessionId", ul.SessionID))
+
+	state.Session.AddSession(ul)
 
 	return nil
 }

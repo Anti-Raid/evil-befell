@@ -196,7 +196,7 @@ func Fetch(
 				return nil, err
 			}
 
-			headers["Authorization"] = fmt.Sprintf("Bearer %v", *sess.Token)
+			headers["Authorization"] = fmt.Sprintf("User %v", sess.Token)
 		}
 
 		req, err := http.NewRequestWithContext(ctx, opts.Method, opts.URL, opts.Body)

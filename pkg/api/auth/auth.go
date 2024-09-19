@@ -8,7 +8,7 @@ import (
 	"github.com/anti-raid/evil-befall/types"
 )
 
-func CreateOauth2Login(ctx context.Context, state *state.State, data types.AuthorizeRequest) (*types.UserLogin, error) {
+func CreateOauth2Login(ctx context.Context, state *state.State, data types.AuthorizeRequest) (*types.CreateUserSessionResponse, error) {
 	body, err := fetch.JsonBody(data)
 
 	if err != nil {
@@ -25,7 +25,7 @@ func CreateOauth2Login(ctx context.Context, state *state.State, data types.Autho
 		return nil, err
 	}
 
-	var userLogin types.UserLogin
+	var userLogin types.CreateUserSessionResponse
 
 	if err := resp.Json(&userLogin); err != nil {
 		return nil, err

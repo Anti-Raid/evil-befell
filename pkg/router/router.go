@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/anti-raid/evil-befall/pkg/state"
-	"github.com/rivo/tview"
 )
 
 var (
@@ -44,17 +43,17 @@ func GetCurrentRoute(state *state.State) Route {
 }
 
 // Goto page based on the states current location
-func GotoCurrent(state *state.State, app *tview.Application, args map[string]string) (Route, error) {
+func GotoCurrent(state *state.State, args map[string]string) (Route, error) {
 	for _, route := range routes {
 		if state.CurrentLoc.ID == route.Command() {
-			return route, Goto(route.Command(), state, app, args)
+			return route, Goto(route.Command(), state, args)
 		}
 	}
 
 	return nil, errors.New("route not found")
 }
 
-func Goto(id string, state *state.State, app *tview.Application, args map[string]string) error {
+func Goto(id string, state *state.State, args map[string]string) error {
 	// Update the state
 	state.CurrentLoc.ID = id
 	state.CurrentLoc.Data = args
@@ -63,7 +62,7 @@ func Goto(id string, state *state.State, app *tview.Application, args map[string
 	currentRoute := GetCurrentRoute(state)
 
 	// If the current route is not nil, destroy it
-	if currentRoute != nil && currentRoute.Command() != id {
+	if currentRoute != nil {
 		if err := currentRoute.Destroy(state); err != nil {
 			return err
 		}
@@ -79,7 +78,7 @@ func Goto(id string, state *state.State, app *tview.Application, args map[string
 		return err
 	}
 
-	return r.Render(state, app, args)
+	return r.Render(state, args)
 }
 
 type Route interface {
@@ -100,5 +99,5 @@ type Route interface {
 	Destroy(state *state.State) error
 
 	// Renders the route
-	Render(state *state.State, app *tview.Application, args map[string]string) error
+	Render(state *state.State, args map[string]string) error
 }
