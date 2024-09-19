@@ -4,9 +4,12 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/anti-raid/evil-befall/pkg/api/core"
+	"github.com/anti-raid/evil-befall/pkg/auth"
 	"github.com/anti-raid/evil-befall/pkg/constants"
 	"github.com/anti-raid/evil-befall/pkg/state"
 	"github.com/anti-raid/evil-befall/pkg/statusbox"
+	"github.com/pkg/browser"
 	"github.com/rivo/tview"
 )
 
@@ -59,8 +62,34 @@ func (r *LoginRoute) Render(state *state.State, app *tview.Application, pages *t
 			panic("Instance URL is required")
 		}
 
-		loginStatusWriter.AddStatusMessage("Logging in..." + strconv.Itoa(i))
+		state.StateFetchOptions.InstanceAPIUrl = instanceUrl
+
+		loginStatusWriter.AddStatusMessage("Logging in... | Attempt #" + strconv.Itoa(i))
 		i++
+
+		apiConfig, err := core.GetApiConfig(r.ctx, state)
+
+		if err != nil {
+			loginStatusWriter.AddStatusMessage("Failed to get API config: " + err.Error())
+			return
+		}
+
+		loginUrl := auth.GetAuthURL(r.ctx, state, apiConfig)
+
+		loginStatusWriter.AddStatusMessage("Login URL: " + loginUrl)
+
+		if err := browser.OpenURL(loginUrl); err != nil {
+			loginStatusWriter.AddStatusMessage("Failed to open browser: " + err.Error())
+		}
+
+		ul, err := auth.CreateSessionOnServerAddr(r.ctx, state)
+
+		if err != nil {
+			loginStatusWriter.AddStatusMessage("Failed to create session: " + err.Error())
+			return
+		}
+
+		loginStatusWriter.AddStatusMessage("Session created: " + ul.UserID)
 	})
 
 	form.AddButton("Exit", func() {
@@ -70,7 +99,7 @@ func (r *LoginRoute) Render(state *state.State, app *tview.Application, pages *t
 	// Add the form to the grid
 	grid.AddItem(form, 0, 0, 1, 3, 0, 0, true)
 
-	// Add the status box to the grid
+	// Add the status box to the grid below the form taking up the remaining screen width and height
 	grid.AddItem(loginStatusBox, 1, 0, 1, 3, 0, 0, false)
 
 	return grid, nil

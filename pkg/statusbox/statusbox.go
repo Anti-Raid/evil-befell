@@ -44,7 +44,6 @@ func (r *StatusBox) drawMessages() {
 			continue
 		case msg := <-r.messages:
 			r.w.Write([]byte(msg + "\n"))
-
 			r.w.ScrollToEnd()
 		}
 	}

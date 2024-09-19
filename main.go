@@ -21,7 +21,7 @@ func main() {
 	// Create a new state
 	var state = state.NewState()
 
-	var mouseEnabled = envOrBool("MOUSE_ENABLED", "true") == "true"
+	var mouseEnabled = envOrBool("MOUSE_ENABLED", "false") == "true"
 	var pasteEnabled = envOrBool("PASTE_ENABLED", "true") == "true"
 	var fullscreen = envOrBool("FULLSCREEN", "true") == "true"
 

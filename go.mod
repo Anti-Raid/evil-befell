@@ -4,6 +4,8 @@ go 1.23.1
 
 require github.com/wk8/go-ordered-map/v2 v2.1.8
 
+require github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
+
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect

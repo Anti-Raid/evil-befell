@@ -76,6 +76,8 @@ type State struct {
 
 	// State fetch options
 	StateFetchOptions StateFetchOptions
+
+	BindAddr string // Bind address with login/logout etc.
 }
 
 func NewState() *State {
@@ -83,5 +85,6 @@ func NewState() *State {
 		CurrentLoc: &loc.LocMetadata{
 			ID: "root",
 		},
+		BindAddr: "http://localhost:5173",
 	}
 }

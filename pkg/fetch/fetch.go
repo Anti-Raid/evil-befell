@@ -3,6 +3,8 @@
 package fetch
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -45,6 +47,9 @@ type ExtraFetchOptions struct {
 
 	// Function to call on ratelimit
 	OnRatelimit func(fo FetchOptions, retryAfter float64, err error, sfo *state.StateFetchOptions, sess *state.StateSessionAuth)
+
+	// Whether or not to error on fail
+	NoErrorOnFail bool
 }
 
 var DefaultFetchOptions = ExtraFetchOptions{
@@ -166,6 +171,7 @@ func (fo FetchOptions) String() string {
 }
 
 func Fetch(
+	ctx context.Context,
 	sfo *state.StateFetchOptions,
 	efo ExtraFetchOptions,
 	opts FetchOptions,
@@ -193,7 +199,7 @@ func Fetch(
 			headers["Authorization"] = fmt.Sprintf("Bearer %v", *sess.Token)
 		}
 
-		req, err := http.NewRequest(opts.Method, opts.URL, opts.Body)
+		req, err := http.NewRequestWithContext(ctx, opts.Method, opts.URL, opts.Body)
 
 		if err != nil {
 			return nil, err
@@ -234,8 +240,10 @@ func Fetch(
 			if !efo.NoWait {
 				time.Sleep(time.Duration(retryAfter) * time.Second)
 
-				if _, err := opts.Body.Seek(0, io.SeekStart); err != nil {
-					return nil, err
+				if opts.Body != nil {
+					if _, err := opts.Body.Seek(0, io.SeekStart); err != nil {
+						return nil, err
+					}
 				}
 
 				if efo.OnRatelimit != nil {
@@ -246,6 +254,22 @@ func Fetch(
 			}
 		}
 
-		return NewClientResponse(resp), nil
+		ncr := NewClientResponse(resp)
+
+		if !efo.NoErrorOnFail && !ncr.Ok() {
+			return ncr, ncr.Err()
+		}
+
+		return ncr, nil
 	}
+}
+
+func JsonBody(v any) (io.ReadSeeker, error) {
+	b, err := json.Marshal(v)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes.NewReader(b), nil
 }
