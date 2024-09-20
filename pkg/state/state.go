@@ -1,7 +1,12 @@
 package state
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 
 	"github.com/anti-raid/evil-befall/pkg/loc"
 	"github.com/anti-raid/evil-befall/types"
@@ -66,6 +71,7 @@ type UserPref struct {
 	MouseEnabledInTView      bool
 	PasteEnabledInTView      bool
 	FullscreenEnabledInTView bool
+	Persist                  *string
 }
 
 // Stores all the state for the application
@@ -84,11 +90,78 @@ type State struct {
 	Prefs UserPref
 }
 
-func NewState() *State {
+func (s *State) PersistToDisk() error {
+	// Open file
+	if s.Prefs.Persist == nil {
+		return nil
+	}
+
+	// Get root directory from s.Prefs.Persist
+	parent := filepath.Dir(*s.Prefs.Persist)
+	path := filepath.Join(parent, ".evil-befall.swp")
+
+	tmpFile, err := os.Create(path)
+
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+
+	defer tmpFile.Close()
+
+	// Write to file
+	if err := json.NewEncoder(tmpFile).Encode(s); err != nil {
+		return fmt.Errorf("failed to write state to file: %w", err)
+	}
+
+	// Close file
+	if err := tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to close file: %w", err)
+	}
+
+	// Move file to final location
+	if err := os.Rename(path, *s.Prefs.Persist); err != nil {
+		return fmt.Errorf("failed to move file to final location: %w", err)
+	}
+
+	return nil
+}
+
+func CreateStateFromPersist(userPrefs UserPref) (*State, error) {
+	if userPrefs.Persist == nil {
+		return nil, fs.ErrNotExist
+	}
+
+	f, err := os.Open(*userPrefs.Persist)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to read persisted state: %w", err)
+	}
+
+	var s *State
+	if err := json.NewDecoder(f).Decode(&s); err != nil {
+		return nil, fmt.Errorf("failed to decode persisted state: %w", err)
+	}
+
+	return s, nil
+}
+
+func NewState(userPrefs UserPref) (*State, error) {
+	if userPrefs.Persist != nil {
+		s, err := CreateStateFromPersist(userPrefs)
+
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("failed to create state from persisted state: %w", err)
+		} else if err == nil {
+			s.Prefs = userPrefs // Set user prefs to the user prefs passed in
+			return s, nil
+		}
+	}
+
 	return &State{
 		CurrentLoc: &loc.LocMetadata{
 			ID: "root",
 		},
 		BindAddr: "http://localhost:5173",
-	}
+		Prefs:    userPrefs,
+	}, nil
 }

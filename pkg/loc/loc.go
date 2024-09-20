@@ -16,21 +16,25 @@ type LocMetadata struct {
 
 func (loc *LocMetadata) MarshalJSON() ([]byte, error) {
 	// Format using FormatLocMetadata
-	return []byte(FormatLocMetadata(loc)), nil
+	return json.Marshal(FormatLocMetadata(loc))
 }
 
 func (loc *LocMetadata) UnmarshalJSON(data []byte) error {
+	var locStr string
+
+	// Unmarshal the JSON data
+	if err := json.Unmarshal(data, &locStr); err != nil {
+		return err
+	}
+
 	// Parse using ParseLocMetadata
-	meta, err := ParseLocMetadata(string(data))
+	meta, err := ParseLocMetadata(locStr)
 
 	if err != nil {
 		return err
 	}
 
-	// Copy the data
-	loc.ID = meta.ID
-	loc.Data = meta.Data
-
+	*loc = *meta
 	return nil
 }
 
@@ -57,6 +61,8 @@ func ParseLocMetadata(loc string) (*LocMetadata, error) {
 func FormatLocMetadata(loc *LocMetadata) string {
 	if loc == nil {
 		return ""
+	} else if len(loc.Data) == 0 {
+		return loc.ID
 	}
 
 	// Convert the JSON data to a string

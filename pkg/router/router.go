@@ -3,6 +3,7 @@ package router
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/anti-raid/evil-befall/pkg/state"
 )
@@ -14,6 +15,10 @@ var (
 var routes = []Route{}
 
 func AddRoute(r Route) {
+	if r := GetRoute(r.Command()); r != nil {
+		panic(fmt.Sprintf("route %s already exists", r.Command()))
+	}
+
 	routes = append(routes, r)
 }
 
@@ -54,6 +59,13 @@ func GotoCurrent(state *state.State, args map[string]string) (Route, error) {
 }
 
 func Goto(id string, state *state.State, args map[string]string) error {
+	// Persist state if persist mode is enabled
+	err := state.PersistToDisk()
+
+	if err != nil {
+		return fmt.Errorf("failed to persist state to disk: %w", err)
+	}
+
 	// Update the state
 	state.CurrentLoc.ID = id
 	state.CurrentLoc.Data = args
@@ -78,7 +90,20 @@ func Goto(id string, state *state.State, args map[string]string) error {
 		return err
 	}
 
-	return r.Render(state, args)
+	err = r.Render(state, args)
+
+	if err != nil {
+		return err
+	}
+
+	// Persist state if persist mode is enabled
+	err = state.PersistToDisk()
+
+	if err != nil {
+		return fmt.Errorf("failed to persist state to disk: %w", err)
+	}
+
+	return nil
 }
 
 type Route interface {

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/anti-raid/evil-befall/pkg/router"
@@ -23,19 +24,38 @@ func envOrBool(key, fallback string) string {
 	return fallback
 }
 
+func envOrString(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+
+	return fallback
+}
+
 func main() {
 	// Create a new state
-	var state = statelib.NewState()
-
 	var mouseEnabled = envOrBool("MOUSE_ENABLED", "false") == "true"
 	var pasteEnabled = envOrBool("PASTE_ENABLED", "true") == "true"
 	var fullscreen = envOrBool("FULLSCREEN", "true") == "true"
+	var persist = envOrString("PERSIST", "evil-befall-cfg.json")
 
 	// Set state.Prefs
-	state.Prefs = statelib.UserPref{
+	state, err := statelib.NewState(statelib.UserPref{
 		MouseEnabledInTView:      mouseEnabled,
 		PasteEnabledInTView:      pasteEnabled,
 		FullscreenEnabledInTView: fullscreen,
+		Persist: func() *string {
+			if persist == "" || persist == "false" {
+				return nil
+			}
+
+			return &persist
+		}(),
+	})
+
+	if err != nil {
+		slog.Error("Failed to create state:", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	// Create command list
