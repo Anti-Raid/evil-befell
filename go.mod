@@ -10,6 +10,7 @@ require github.com/infinitybotlist/eureka v1.10.0
 
 require (
 	github.com/go-andiamo/splitter v1.2.5 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.0 // indirect
 	github.com/peterh/liner v1.2.2 // indirect
 )
 

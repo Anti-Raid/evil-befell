@@ -2,11 +2,77 @@ package auth
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/anti-raid/evil-befall/pkg/api"
 	"github.com/anti-raid/evil-befall/pkg/fetch"
 	"github.com/anti-raid/evil-befall/pkg/state"
 	"github.com/anti-raid/evil-befall/types"
 )
+
+// CreateIoAuthLogin is special because it primarily uses query parameters
+type CreateIoAuthLoginData struct {
+	PathRedirectData string  `json:"query:path_rd"`
+	PathCode         *string `json:"query:path_code"`
+}
+
+// CreateIoAuthLogin needs to return a struct as it is special
+type CreateIoAuthLoginResponse struct {
+	Headers    map[string][]string `json:"headers"`
+	StatusCode int                 `json:"status_code"`
+	Body       string              `json:"body"`
+}
+
+func CreateIoAuthLogin(ctx context.Context, state *state.State, data *CreateIoAuthLoginData) (*CreateIoAuthLoginResponse, error) {
+	resp, err := fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultFetchOptions, fetch.FetchOptions{
+		Method: "GET",
+		URL:    state.StateFetchOptions.InstanceAPIUrl + "/ioauth/login" + api.StructToQueryParamsString(data),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &CreateIoAuthLoginResponse{
+		Headers:    resp.Headers(),
+		StatusCode: resp.Status(),
+		Body: func() string {
+			str, err := resp.Text()
+
+			if err != nil {
+				return fmt.Errorf("failed to read response body: %w", err).Error()
+			}
+
+			return str
+		}(),
+	}, nil
+}
+
+func TestAuth(ctx context.Context, state *state.State, data *types.TestAuth) (*types.TestAuthResponse, error) {
+	body, err := fetch.JsonBody(data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultFetchOptions, fetch.FetchOptions{
+		Method: "POST",
+		URL:    state.StateFetchOptions.InstanceAPIUrl + "/auth/test",
+		Body:   body,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var res types.TestAuthResponse
+
+	if err := resp.Json(&res); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
 
 func CreateOauth2Login(ctx context.Context, state *state.State, data types.AuthorizeRequest) (*types.CreateUserSessionResponse, error) {
 	body, err := fetch.JsonBody(data)
@@ -25,11 +91,89 @@ func CreateOauth2Login(ctx context.Context, state *state.State, data types.Autho
 		return nil, err
 	}
 
-	var userLogin types.CreateUserSessionResponse
+	var res types.CreateUserSessionResponse
 
-	if err := resp.Json(&userLogin); err != nil {
+	if err := resp.Json(&res); err != nil {
 		return nil, err
 	}
 
-	return &userLogin, nil
+	return &res, nil
+}
+
+func GetUserSessions(ctx context.Context, state *state.State) (*types.UserSessionList, error) {
+	resp, err := fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultFetchOptions, fetch.FetchOptions{
+		Method: "GET",
+		URL:    state.StateFetchOptions.InstanceAPIUrl + "/sessions",
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var res types.UserSessionList
+
+	if err := resp.Json(&res); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+func CreateUserSession(ctx context.Context, state *state.State, data *types.CreateUserSession) (*types.CreateUserSessionResponse, error) {
+	body, err := fetch.JsonBody(data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultFetchOptions, fetch.FetchOptions{
+		Method: "POST",
+		URL:    state.StateFetchOptions.InstanceAPIUrl + "/sessions",
+		Body:   body,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var res types.CreateUserSessionResponse
+
+	if err := resp.Json(&res); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+type RevokeUserSessionData struct {
+	SessionID string `json:"session_id"`
+}
+
+func RevokeUserSession(ctx context.Context, state *state.State, data *RevokeUserSessionData) error {
+	body, err := fetch.JsonBody(data)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultFetchOptions, fetch.FetchOptions{
+		Method: "POST",
+		URL:    state.StateFetchOptions.InstanceAPIUrl + "/sessions",
+		Body:   body,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func init() {
+	api.CreateAndRegisterTestableRouteWithReqAndResp("createIoAuthLogin", CreateIoAuthLogin)
+	api.CreateAndRegisterTestableRouteWithReqAndResp("testAuth", TestAuth)
+	api.CreateAndRegisterTestableRouteWithReqAndResp("createOauth2Login", CreateOauth2Login)
+	api.CreateAndRegisterTestableRouteWithOnlyResp("getUserSessions", GetUserSessions)
+	api.CreateAndRegisterTestableRouteWithReqAndResp("createUserSession", CreateUserSession)
+	api.CreateAndRegisterTestableRouteWithOnlyReq("revokeUserSession", RevokeUserSession)
 }

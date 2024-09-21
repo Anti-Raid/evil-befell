@@ -29,9 +29,10 @@ type CreateUserSession struct {
 }
 
 type CreateUserSessionResponse struct {
-	UserID    string `json:"user_id" description:"The ID of the user who created the session"`
-	Token     string `json:"token" description:"The token of the session"`
-	SessionID string `json:"session_id" description:"The ID of the session"`
+	UserID    string    `json:"user_id" description:"The ID of the user who created the session"`
+	Token     string    `json:"token" description:"The token of the session"`
+	SessionID string    `json:"session_id" description:"The ID of the session"`
+	Expiry    time.Time `json:"expiry" description:"The time the session expires"`
 }
 
 type UserSessionList struct {
@@ -42,4 +43,12 @@ type TestAuth struct {
 	AuthType string `json:"auth_type"`
 	TargetID string `json:"target_id"`
 	Token    string `json:"token"`
+}
+
+type TestAuthResponse struct {
+	TargetType string         `json:"target_type"`
+	ID         string         `json:"id"`
+	Authorized bool           `json:"authorized"`
+	Banned     bool           `json:"banned"` // Only applicable with AllowedScope
+	Data       map[string]any `json:"data"`   // Additional data
 }

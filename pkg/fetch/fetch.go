@@ -160,6 +160,30 @@ func (c *ClientResponse) Json(t any) error {
 	return c.unmarshalBody(t)
 }
 
+func (c *ClientResponse) String() string {
+	return fmt.Sprintf("ClientResponse{Status: %v, ErrorType: %v}", c.resp.StatusCode, c.errorType)
+}
+
+func (c *ClientResponse) Headers() map[string][]string {
+	return c.resp.Header
+}
+
+// Returns the body as a string
+func (c *ClientResponse) Text() (string, error) {
+	//nolint:errcheck
+	defer c.resp.Body.Close()
+	//nolint:errcheck
+	defer io.Copy(io.Discard, c.resp.Body)
+
+	bytes, err := io.ReadAll(c.resp.Body)
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(bytes), nil
+}
+
 type FetchOptions struct {
 	Method string
 	URL    string

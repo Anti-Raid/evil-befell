@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/anti-raid/evil-befall/pkg/loc"
 	"github.com/anti-raid/evil-befall/types"
@@ -28,8 +30,33 @@ type StateSessionAuth struct {
 	CurrentSessionIndex int
 }
 
+// Remove expired sessions returning the sessions removed
+func (s *StateSessionAuth) RemoveExpiredSessions() []*types.CreateUserSessionResponse {
+	var removed []*types.CreateUserSessionResponse
+	var removedIdx []int
+
+	currentTime := time.Now()
+	for i, sess := range s.UserSessions {
+		isExpired := sess.Expiry.Before(currentTime)
+		if isExpired {
+			removed = append(removed, sess)
+			removedIdx = append(removedIdx, i)
+		}
+	}
+
+	// Remove the sessions
+	for i, idx := range removedIdx {
+		s.UserSessions = append(s.UserSessions[:idx-i], s.UserSessions[idx-i+1:]...)
+	}
+
+	slog.Info("Removed expired sessions from state", slog.Int("count", len(removed)))
+
+	return removed
+}
+
 // Add a new session, returns an error if token is not set
 func (s *StateSessionAuth) AddSession(sess *types.CreateUserSessionResponse) error {
+	s.RemoveExpiredSessions() // Remove expired sessions
 	s.UserSessions = append(s.UserSessions, sess)
 
 	return nil
@@ -37,6 +64,8 @@ func (s *StateSessionAuth) AddSession(sess *types.CreateUserSessionResponse) err
 
 // Returns the current session
 func (s *StateSessionAuth) GetCurrentSession() (*types.CreateUserSessionResponse, error) {
+	s.RemoveExpiredSessions() // Remove expired sessions
+
 	if len(s.UserSessions) > s.CurrentSessionIndex-1 {
 		return nil, ErrSessionNotFound
 	}
@@ -46,6 +75,8 @@ func (s *StateSessionAuth) GetCurrentSession() (*types.CreateUserSessionResponse
 
 // Set the current session by index
 func (s *StateSessionAuth) SetCurrentSession(i int) error {
+	s.RemoveExpiredSessions() // Remove expired sessions
+
 	if len(s.UserSessions) > i-1 {
 		return ErrSessionNotFound
 	}
@@ -57,6 +88,8 @@ func (s *StateSessionAuth) SetCurrentSession(i int) error {
 
 // Returns if the user is currently authorized into a session
 func (s *StateSessionAuth) IsAuthorized() bool {
+	s.RemoveExpiredSessions() // Remove expired sessions
+
 	_, err := s.GetCurrentSession()
 
 	return !errors.Is(err, ErrSessionNotFound)
@@ -140,6 +173,16 @@ func CreateStateFromPersist(userPrefs UserPref) (*State, error) {
 	var s *State
 	if err := json.NewDecoder(f).Decode(&s); err != nil {
 		return nil, fmt.Errorf("failed to decode persisted state: %w", err)
+	}
+
+	removed := s.Session.RemoveExpiredSessions() // Remove expired sessions from the session
+
+	if len(removed) > 0 {
+		slog.Warn("Re-persisting changed state to disk due to expired sessions")
+
+		if err := s.PersistToDisk(); err != nil {
+			return nil, fmt.Errorf("failed to re-persist state to disk: %w", err)
+		}
 	}
 
 	return s, nil

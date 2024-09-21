@@ -10,6 +10,8 @@ github.com/gdamore/tcell/v2 v2.7.1 h1:TiCcmpWHiAU7F0rA2I3S2Y4mmLmO9KHxJ7E1QhYzQb
 github.com/gdamore/tcell/v2 v2.7.1/go.mod h1:dSXtXTSK0VsW1biw65DZLZ2NKr7j0qP/0J7ONmsraWg=
 github.com/go-andiamo/splitter v1.2.5 h1:P3NovWMY2V14TJJSolXBvlOmGSZo3Uz+LtTl2bsV/eY=
 github.com/go-andiamo/splitter v1.2.5/go.mod h1:8WHU24t9hcMKU5FXDQb1hysSEC/GPuivIp0uKY1J8gw=
+github.com/go-viper/mapstructure/v2 v2.2.0 h1:zGE1Kaz78LVwzU0kOfZuqwKKiG1gLkHTZ/cZioHp9po=
+github.com/go-viper/mapstructure/v2 v2.2.0/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
 github.com/infinitybotlist/eureka v1.10.0 h1:4Qx9DKyWY4A8mKAf0Kw0Fc3/vGnZ/f50miya+qoyQlM=
 github.com/infinitybotlist/eureka v1.10.0/go.mod h1:v8Yt2BsjeGPLxHsnRkaKyiP52EIWR0VR7x5K4GrhJ/A=
 github.com/josharian/intern v1.0.0/go.mod h1:5DoeVV0s6jJacbCEi61lwdGj/aVlrQvzHFFd8Hwg//Y=
