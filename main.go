@@ -9,7 +9,7 @@ import (
 	"github.com/anti-raid/evil-befall/pkg/router"
 	_ "github.com/anti-raid/evil-befall/pkg/routes"
 	statelib "github.com/anti-raid/evil-befall/pkg/state"
-	"github.com/infinitybotlist/eureka/shellcli"
+	"github.com/anti-raid/shellcli/shell"
 )
 
 type cliData struct {
@@ -59,23 +59,23 @@ func main() {
 	}
 
 	// Create command list
-	var commands = make(map[string]*shellcli.Command[cliData])
+	var commands = make(map[string]*shell.Command[cliData])
 
 	for _, route := range router.Routes() {
-		commands[route.Command()] = &shellcli.Command[cliData]{
+		commands[route.Command()] = &shell.Command[cliData]{
 			Description: route.Description(),
 			Args:        route.Arguments(),
-			Run: func(cli *shellcli.ShellCli[cliData], args map[string]string) error {
+			Run: func(cli *shell.ShellCli[cliData], args map[string]string) error {
 				return router.Goto(route.Command(), cli.Data.State, args)
 			},
 		}
 	}
 
-	root := &shellcli.ShellCli[cliData]{
+	root := &shell.ShellCli[cliData]{
 		Data: &cliData{
 			State: state,
 		},
-		Prompter: func(r *shellcli.ShellCli[cliData]) string {
+		Prompter: func(r *shell.ShellCli[cliData]) string {
 			return "evil-befall> "
 		},
 		Commands: commands,

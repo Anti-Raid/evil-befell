@@ -3,8 +3,8 @@ package types
 import (
 	"time"
 
+	"github.com/anti-raid/evil-befall/types/dovetypes"
 	"github.com/anti-raid/evil-befall/types/ext_types"
-	"github.com/infinitybotlist/eureka/dovewing/dovetypes"
 )
 
 // Represents a user on Antiraid

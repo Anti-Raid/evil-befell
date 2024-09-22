@@ -170,10 +170,15 @@ func RevokeUserSession(ctx context.Context, state *state.State, data *RevokeUser
 }
 
 func init() {
-	api.CreateAndRegisterTestableRouteWithReqAndResp("createIoAuthLogin", CreateIoAuthLogin)
-	api.CreateAndRegisterTestableRouteWithReqAndResp("testAuth", TestAuth)
-	api.CreateAndRegisterTestableRouteWithReqAndResp("createOauth2Login", CreateOauth2Login)
-	api.CreateAndRegisterTestableRouteWithOnlyResp("getUserSessions", GetUserSessions)
-	api.CreateAndRegisterTestableRouteWithReqAndResp("createUserSession", CreateUserSession)
-	api.CreateAndRegisterTestableRouteWithOnlyReq("revokeUserSession", RevokeUserSession)
+	api.RegisterTestableRouteCategory(
+		api.NewTestableRouteCategory(
+			"auth",
+			api.CreateTestableRouteWithReqAndResp("createIoAuthLogin", CreateIoAuthLogin),
+			api.CreateTestableRouteWithReqAndResp("testAuth", TestAuth),
+			api.CreateTestableRouteWithReqAndResp("createOauth2Login", CreateOauth2Login),
+			api.CreateTestableRouteWithOnlyResp("getUserSessions", GetUserSessions),
+			api.CreateTestableRouteWithReqAndResp("createUserSession", CreateUserSession),
+			api.CreateTestableRouteWithOnlyReq("revokeUserSession", RevokeUserSession),
+		),
+	)
 }

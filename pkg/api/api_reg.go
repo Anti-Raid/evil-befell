@@ -17,6 +17,8 @@ type ApiRequestFuncWithReqAndResp[ReqType any, RespType any] func(ctx context.Co
 type TestableRoute interface {
 	ID() string
 	PopulateWithArgs(args map[string]any) error
+	ReqType() any
+	RespType() any
 	Exec(ctx context.Context, state *state.State) (any, error)
 }
 
@@ -26,6 +28,8 @@ func IsTestableRoute(r TestableRoute) {}
 type TestableRouteWrapper[Data any] struct {
 	FuncID               func(self *TestableRouteWrapper[Data]) string
 	FuncPopulateWithArgs func(self *TestableRouteWrapper[Data], args map[string]any) error
+	FuncReqType          func(self *TestableRouteWrapper[Data]) any
+	FuncRespType         func(self *TestableRouteWrapper[Data]) any
 	FuncExec             func(self *TestableRouteWrapper[Data], ctx context.Context, state *state.State) (any, error)
 	Data                 Data
 }
@@ -36,6 +40,14 @@ func (r *TestableRouteWrapper[Data]) ID() string {
 
 func (r *TestableRouteWrapper[Data]) PopulateWithArgs(args map[string]any) error {
 	return r.FuncPopulateWithArgs(r, args)
+}
+
+func (r *TestableRouteWrapper[Data]) ReqType() any {
+	return r.FuncReqType(r)
+}
+
+func (r *TestableRouteWrapper[Data]) RespType() any {
+	return r.FuncRespType(r)
 }
 
 func (r *TestableRouteWrapper[Data]) Exec(ctx context.Context, state *state.State) (any, error) {
@@ -52,6 +64,15 @@ func CreateTestableRouteWithOnlyResp[RespType any](id string, fn ApiRequestFuncW
 
 	trw.FuncPopulateWithArgs = func(self *TestableRouteWrapper[struct{}], args map[string]any) error {
 		return nil
+	}
+
+	trw.FuncReqType = func(self *TestableRouteWrapper[struct{}]) any {
+		return struct{}{}
+	}
+
+	trw.FuncRespType = func(self *TestableRouteWrapper[struct{}]) any {
+		var respType RespType
+		return respType
 	}
 
 	trw.FuncExec = func(self *TestableRouteWrapper[struct{}], ctx context.Context, state *state.State) (any, error) {
@@ -73,7 +94,16 @@ func CreateTestableRouteWithOnlyReq[ReqType any](id string, fn ApiRequestFuncWit
 		// Use mapstructure to create a ReqType from args
 		var reqData ReqType
 
-		err := mapstructure.Decode(args, &reqData)
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			TagName: "json",
+			Result:  &reqData,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		err = decoder.Decode(args)
 
 		if err != nil {
 			return err
@@ -82,6 +112,15 @@ func CreateTestableRouteWithOnlyReq[ReqType any](id string, fn ApiRequestFuncWit
 		self.Data = reqData
 
 		return nil
+	}
+
+	trw.FuncReqType = func(self *TestableRouteWrapper[ReqType]) any {
+		var reqType ReqType
+		return reqType
+	}
+
+	trw.FuncRespType = func(self *TestableRouteWrapper[ReqType]) any {
+		return struct{}{}
 	}
 
 	trw.FuncExec = func(self *TestableRouteWrapper[ReqType], ctx context.Context, state *state.State) (any, error) {
@@ -109,7 +148,16 @@ func CreateTestableRouteWithReqAndResp[ReqType any, RespType any](id string, fn 
 		// Use mapstructure to create a ReqType from args
 		var reqData ReqType
 
-		err := mapstructure.Decode(args, &reqData)
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			TagName: "json",
+			Result:  &reqData,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		err = decoder.Decode(args)
 
 		if err != nil {
 			return err
@@ -118,6 +166,16 @@ func CreateTestableRouteWithReqAndResp[ReqType any, RespType any](id string, fn 
 		self.Data = reqData
 
 		return nil
+	}
+
+	trw.FuncReqType = func(self *TestableRouteWrapper[ReqType]) any {
+		var reqType ReqType
+		return reqType
+	}
+
+	trw.FuncRespType = func(self *TestableRouteWrapper[ReqType]) any {
+		var respType RespType
+		return respType
 	}
 
 	trw.FuncExec = func(self *TestableRouteWrapper[ReqType], ctx context.Context, state *state.State) (any, error) {
@@ -132,23 +190,40 @@ func init() {
 	IsTestableRoute(&TestableRouteWrapper[struct{}]{})
 }
 
+type TestableRouteCategory struct {
+	Name   string
+	Routes []TestableRoute
+}
+
+func NewTestableRouteCategory(name string, routes ...TestableRoute) TestableRouteCategory {
+	return TestableRouteCategory{
+		Name:   name,
+		Routes: routes,
+	}
+}
+
 // API test registry
-var testableRoutes = map[string]TestableRoute{}
+var testableRoutesCategory = []TestableRouteCategory{}
 
-func RegisterTestableRoute(r TestableRoute) {
-	testableRoutes[r.ID()] = r
+// RegisterTestableRouteCategory registers a new TestableRouteCategory
+func RegisterTestableRouteCategory(r TestableRouteCategory) {
+	testableRoutesCategory = append(testableRoutesCategory, r)
 }
 
-func CreateAndRegisterTestableRouteWithReqAndResp[ReqType any, RespType any](id string, fn ApiRequestFuncWithReqAndResp[ReqType, RespType]) {
-	RegisterTestableRoute(CreateTestableRouteWithReqAndResp(id, fn))
+// GetTestableRouteCategories returns all registered TestableRouteCategory
+func GetTestableRouteCategories() []TestableRouteCategory {
+	return testableRoutesCategory
 }
 
-func CreateAndRegisterTestableRouteWithOnlyReq[ReqType any](id string, fn ApiRequestFuncWithOnlyReq[ReqType]) {
-	RegisterTestableRoute(CreateTestableRouteWithOnlyReq(id, fn))
-}
+// GetTestableRoutes returns all registered TestableRoute in a flat list
+func GetTestableRoutes() []TestableRoute {
+	var testableRoutes []TestableRoute
 
-func CreateAndRegisterTestableRouteWithOnlyResp[RespType any](id string, fn ApiRequestFuncWithOnlyResp[RespType]) {
-	RegisterTestableRoute(CreateTestableRouteWithOnlyResp(id, fn))
+	for _, category := range testableRoutesCategory {
+		testableRoutes = append(testableRoutes, category.Routes...)
+	}
+
+	return testableRoutes
 }
 
 // Other utilities
