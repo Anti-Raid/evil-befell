@@ -8,7 +8,7 @@ require github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 
 require github.com/go-viper/mapstructure/v2 v2.2.0
 
-require github.com/anti-raid/spintrack v0.1.7
+require github.com/anti-raid/spintrack v0.1.11
 
 require (
 	github.com/anti-raid/shellcli v0.0.0-20240921194348-e6232d74786d
