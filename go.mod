@@ -6,12 +6,12 @@ require github.com/wk8/go-ordered-map/v2 v2.1.8
 
 require github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 
-require github.com/go-viper/mapstructure/v2 v2.2.0
+require github.com/anti-raid/spintrack v0.1.12
 
-require github.com/anti-raid/spintrack v0.1.11
+require github.com/spewerspew/spew v0.0.0-20230513223542-89b69fbbe2bd // indirect
 
 require (
-	github.com/anti-raid/shellcli v0.0.0-20240921194348-e6232d74786d
+	github.com/anti-raid/shellcli v0.0.0-20240922163934-c40dccc0267e
 	github.com/go-andiamo/splitter v1.2.5 // indirect
 	github.com/peterh/liner v1.2.2 // indirect
 )

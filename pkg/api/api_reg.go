@@ -2,12 +2,12 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
 
 	"github.com/anti-raid/evil-befall/pkg/state"
-	"github.com/go-viper/mapstructure/v2"
 )
 
 type ApiRequestFuncWithOnlyResp[RespType any] func(ctx context.Context, state *state.State) (*RespType, error)
@@ -16,7 +16,7 @@ type ApiRequestFuncWithReqAndResp[ReqType any, RespType any] func(ctx context.Co
 
 type TestableRoute interface {
 	ID() string
-	PopulateWithArgs(args map[string]any) error
+	PopulateWithArgs(args map[string]any) (TestableRoute, error)
 	ReqType() any
 	RespType() any
 	Exec(ctx context.Context, state *state.State) (any, error)
@@ -27,7 +27,7 @@ func IsTestableRoute(r TestableRoute) {}
 // TestableRouteWrapper is a wrapper to make TestableRoute inside functions
 type TestableRouteWrapper[Data any] struct {
 	FuncID               func(self *TestableRouteWrapper[Data]) string
-	FuncPopulateWithArgs func(self *TestableRouteWrapper[Data], args map[string]any) error
+	FuncPopulateWithArgs func(self *TestableRouteWrapper[Data], args map[string]any) (TestableRoute, error)
 	FuncReqType          func(self *TestableRouteWrapper[Data]) any
 	FuncRespType         func(self *TestableRouteWrapper[Data]) any
 	FuncExec             func(self *TestableRouteWrapper[Data], ctx context.Context, state *state.State) (any, error)
@@ -38,7 +38,7 @@ func (r *TestableRouteWrapper[Data]) ID() string {
 	return r.FuncID(r)
 }
 
-func (r *TestableRouteWrapper[Data]) PopulateWithArgs(args map[string]any) error {
+func (r *TestableRouteWrapper[Data]) PopulateWithArgs(args map[string]any) (TestableRoute, error) {
 	return r.FuncPopulateWithArgs(r, args)
 }
 
@@ -62,8 +62,8 @@ func CreateTestableRouteWithOnlyResp[RespType any](id string, fn ApiRequestFuncW
 		return id
 	}
 
-	trw.FuncPopulateWithArgs = func(self *TestableRouteWrapper[struct{}], args map[string]any) error {
-		return nil
+	trw.FuncPopulateWithArgs = func(self *TestableRouteWrapper[struct{}], args map[string]any) (TestableRoute, error) {
+		return self, nil
 	}
 
 	trw.FuncReqType = func(self *TestableRouteWrapper[struct{}]) any {
@@ -90,28 +90,31 @@ func CreateTestableRouteWithOnlyReq[ReqType any](id string, fn ApiRequestFuncWit
 		return id
 	}
 
-	trw.FuncPopulateWithArgs = func(self *TestableRouteWrapper[ReqType], args map[string]any) error {
-		// Use mapstructure to create a ReqType from args
+	trw.FuncPopulateWithArgs = func(self *TestableRouteWrapper[ReqType], args map[string]any) (TestableRoute, error) {
+		// Use json Marshal/Unmarshal to create a ReqType from args
 		var reqData ReqType
 
-		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-			TagName: "json",
-			Result:  &reqData,
-		})
+		reqBytes, err := json.Marshal(args)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		err = decoder.Decode(args)
+		err = json.Unmarshal(reqBytes, &reqData)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		self.Data = reqData
-
-		return nil
+		// Copy self
+		return &TestableRouteWrapper[ReqType]{
+			FuncID:               self.FuncID,
+			FuncPopulateWithArgs: self.FuncPopulateWithArgs,
+			FuncReqType:          self.FuncReqType,
+			FuncRespType:         self.FuncRespType,
+			FuncExec:             self.FuncExec,
+			Data:                 reqData,
+		}, nil
 	}
 
 	trw.FuncReqType = func(self *TestableRouteWrapper[ReqType]) any {
@@ -144,28 +147,31 @@ func CreateTestableRouteWithReqAndResp[ReqType any, RespType any](id string, fn 
 		return id
 	}
 
-	trw.FuncPopulateWithArgs = func(self *TestableRouteWrapper[ReqType], args map[string]any) error {
-		// Use mapstructure to create a ReqType from args
+	trw.FuncPopulateWithArgs = func(self *TestableRouteWrapper[ReqType], args map[string]any) (TestableRoute, error) {
+		// Use json Marshal/Unmarshal to create a ReqType from args
 		var reqData ReqType
 
-		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-			TagName: "json",
-			Result:  &reqData,
-		})
+		reqBytes, err := json.Marshal(args)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		err = decoder.Decode(args)
+		err = json.Unmarshal(reqBytes, &reqData)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		self.Data = reqData
-
-		return nil
+		// Copy self
+		return &TestableRouteWrapper[ReqType]{
+			FuncID:               self.FuncID,
+			FuncPopulateWithArgs: self.FuncPopulateWithArgs,
+			FuncReqType:          self.FuncReqType,
+			FuncRespType:         self.FuncRespType,
+			FuncExec:             self.FuncExec,
+			Data:                 reqData,
+		}, nil
 	}
 
 	trw.FuncReqType = func(self *TestableRouteWrapper[ReqType]) any {

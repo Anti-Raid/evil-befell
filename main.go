@@ -78,7 +78,8 @@ func main() {
 		Prompter: func(r *shell.ShellCli[cliData]) string {
 			return "evil-befall> "
 		},
-		Commands: commands,
+		Commands:    commands,
+		HistoryPath: "evil-befall-history.txt",
 	}
 
 	root.AddCommand("help", root.Help())
