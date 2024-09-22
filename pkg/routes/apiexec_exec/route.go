@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -41,7 +42,11 @@ func (r *ApiExecExecRoute) Description() string {
 func (r *ApiExecExecRoute) Arguments() [][3]string {
 	return [][3]string{
 		{"route", "Show detailed information about a specific route", "string"},
-		{"debug", "Print debug information", "bool"},
+		{"__debug", "Print debug information", "bool"},
+		{"__spew.req", "Spew the request", "bool"},
+		{"__spew.resp", "Spew the response", "bool"},
+		{"__file", "Write the response to a file", "string"},
+		{"__file.mode", "File mode (json, spew)", "string"},
 	}
 }
 
@@ -114,7 +119,10 @@ func (r *ApiExecExecRoute) Render(state *state.State, args map[string]string) er
 		return fmt.Errorf("failed to populate route with args: %w", err)
 	}
 
-	fmt.Println(structstring.SpewStruct(route))
+	// Print the request
+	if spewReq, ok := args["__spew.req"]; ok && spewReq == "true" {
+		fmt.Println(structstring.SpewStruct(route))
+	}
 
 	// Send the request
 	resp, err := route.Exec(context.TODO(), state)
@@ -126,12 +134,54 @@ func (r *ApiExecExecRoute) Render(state *state.State, args map[string]string) er
 	fmt.Println("Route Resp Recv:")
 
 	// Print the response
-	if spewResp, ok := args["__spew"]; ok && spewResp == "true" {
+	if spewResp, ok := args["__spew.resp"]; ok && spewResp == "true" {
 		fmt.Println(structstring.SpewStruct(resp))
 		return nil
 	}
 
-	// Convert to JSON
+	// If __file is set, write to file
+	if file, ok := args["__file"]; ok && file != "" {
+		f, err := os.Create(file)
+
+		if err != nil {
+			return fmt.Errorf("failed to create file %s: %w", file, err)
+		}
+
+		defer f.Close()
+
+		mode, ok := args["__file.mode"]
+
+		if !ok {
+			mode = "json"
+		}
+
+		switch mode {
+		case "json":
+			enc := json.NewEncoder(f)
+
+			err = enc.Encode(resp)
+
+			if err != nil {
+				return fmt.Errorf("failed to encode response to file: %w", err)
+			}
+
+			fmt.Println("JSON response written to file:", file)
+		case "spew":
+			_, err = f.WriteString(structstring.SpewStruct(resp))
+
+			if err != nil {
+				return fmt.Errorf("failed to write response to file: %w", err)
+			}
+
+			fmt.Println("Spew response written to file:", file)
+		default:
+			return fmt.Errorf("unsupported mode %s", mode)
+		}
+
+		return nil
+	}
+
+	// Otherwise, convert to JSON
 	respJSON, err := json.Marshal(resp)
 
 	if err != nil {
