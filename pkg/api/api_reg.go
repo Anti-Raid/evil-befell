@@ -237,24 +237,40 @@ func StructToQueryParamsList(s any) map[string]any {
 	// Reflect to get fields
 	refType := reflect.TypeOf(s)
 
-	var cols = map[string]any{}
+	switch refType.Kind() {
+	case reflect.Ptr:
+		return StructToQueryParamsList(reflect.ValueOf(s).Elem().Interface())
+	case reflect.Struct:
+		var cols = map[string]any{}
 
-	for _, f := range reflect.VisibleFields(refType) {
-		jsonTag := f.Tag.Get("json")
-		reflectOpts := f.Tag.Get("reflect")
+		for _, f := range reflect.VisibleFields(refType) {
+			jsonTag := f.Tag.Get("json")
+			reflectOpts := f.Tag.Get("reflect")
 
-		if !strings.HasPrefix(jsonTag, "query:") || reflectOpts == "ignore" {
-			continue
+			if !strings.HasPrefix(jsonTag, "query:") || reflectOpts == "ignore" {
+				continue
+			}
+
+			// Get the value of the field
+			val := reflect.ValueOf(s).FieldByName(f.Name).Interface()
+
+			// Add to cols
+			cols[strings.Split(jsonTag, "query:")[0]] = val
 		}
 
-		// Get the value of the field
-		val := reflect.ValueOf(s).FieldByName(f.Name).Interface()
+		return cols
+	case reflect.Map:
+		// We just need to return the keys of the map
+		var cols = map[string]any{}
 
-		// Add to cols
-		cols[strings.Split(jsonTag, "query:")[0]] = val
+		for _, key := range reflect.ValueOf(s).MapKeys() {
+			cols[key.String()] = reflect.ValueOf(s).MapIndex(key).Interface()
+		}
+
+		return cols
+	default:
+		panic("StructToQueryParamsList only accepts struct or map")
 	}
-
-	return cols
 }
 
 func QueryParamsListToString(qp map[string]any) string {

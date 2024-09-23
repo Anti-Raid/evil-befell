@@ -112,12 +112,12 @@ func (r *ApiExecLsRoute) Completion(state *state.State, line string, args map[st
 		return routes, nil
 	}
 
-	routeStr := strings.ToLower(route)
+	routeStr := strings.TrimSpace(strings.ToLower(route))
 
 	var completions = []string{}
 
 	for _, route := range api.GetTestableRoutes() {
-		if strings.HasPrefix(route.ID(), routeStr) {
+		if strings.HasPrefix(strings.ToLower(route.ID()), routeStr) {
 			completions = append(completions, "apiexec.ls "+route.ID())
 		}
 	}

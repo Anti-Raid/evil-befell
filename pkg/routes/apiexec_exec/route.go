@@ -11,6 +11,7 @@ import (
 
 	"github.com/anti-raid/evil-befall/pkg/api"
 	"github.com/anti-raid/evil-befall/pkg/state"
+	"github.com/anti-raid/shellcli/shell"
 	"github.com/anti-raid/spintrack/structstring"
 )
 
@@ -347,4 +348,93 @@ func parseValueImpl(key, typ, v string) (any, error) {
 	default:
 		return v, nil // Just set it as a string/default type
 	}
+}
+
+func (r *ApiExecExecRoute) Completion(state *state.State, line string, args map[string]string) ([]string, error) {
+	route, ok := args["route"]
+
+	// Case #1: No route
+	if !ok || route == "" {
+		routes := make([]string, 0, len(api.GetTestableRoutes()))
+
+		for _, route := range api.GetTestableRoutes() {
+			routes = append(routes, "apiexec.exec "+route.ID())
+		}
+		return routes, nil
+	}
+
+	routeStr := strings.TrimSpace(strings.ToLower(route))
+
+	var completions = []string{}
+	var completionRoutes = []api.TestableRoute{}
+
+	for _, route := range api.GetTestableRoutes() {
+		if strings.HasPrefix(strings.ToLower(route.ID()), routeStr) {
+			completions = append(completions, "apiexec.exec "+route.ID())
+
+			if strings.ToLower(route.ID()) == routeStr {
+				completionRoutes = append(completionRoutes, route)
+				break
+			}
+		}
+	}
+
+	if len(completionRoutes) == 1 {
+		// Case #2: Only one completion means we have gotten to a full non-partial route
+		// Move on to stage 2 completions
+		return r.stage2Completion(line, args, completionRoutes[0])
+	}
+
+	return completions, nil
+}
+
+// Stage 2 completion occurs when the user has fully typed out a route, at this point, we return the whole line combined with request options in reqType
+func (r *ApiExecExecRoute) stage2Completion(line string, args map[string]string, route api.TestableRoute) (c []string, err error) {
+	// Case 1: In the middle of typing out an argument
+	argsStr := strings.Replace(line, "apiexec.exec "+route.ID(), "", 1)
+
+	// Check if the user is at an '=' sign. This means that we should not provide completions at all as they want to type out a value
+	lastArg := shell.UtilFindLastArgInArgStr(argsStr)
+
+	if strings.HasSuffix(lastArg, "=") {
+		return
+	}
+
+	reqType := route.ReqType()
+
+	if reqType == nil {
+		return
+	}
+
+	structFields := structstring.StructFields(reqType, structstring.StructFieldsConfig{
+		FieldFilter: func(f reflect.StructField) (*string, bool) {
+			jsonTag := f.Tag.Get("json")
+			return &jsonTag, jsonTag != "" && jsonTag != "-"
+		},
+	})
+
+	// Look for an untyped arg, args are in format a=b
+	untypedArg := shell.UtilFindUntypedArgInArgStr(argsStr)
+
+	if untypedArg != "" {
+		// Find all fields that start with the untyped arg for completion
+		for _, candidate := range structFields {
+			if !strings.HasPrefix(candidate, untypedArg) {
+				continue
+			}
+
+			c = append(c, strings.TrimSpace(strings.Replace(line, untypedArg, "", 1))+" "+candidate+"=")
+		}
+		return
+	}
+
+	for _, candidate := range structFields {
+		if _, ok := args[candidate]; ok {
+			continue // Skip if already set
+		}
+
+		c = append(c, strings.TrimSpace(line)+" "+candidate+"=")
+	}
+
+	return
 }
