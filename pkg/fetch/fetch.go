@@ -58,6 +58,14 @@ var DefaultFetchOptions = ExtraFetchOptions{
 	},
 }
 
+func DefaultAuthorizedFetchOptions(state *state.State) ExtraFetchOptions {
+	dfo := DefaultFetchOptions
+
+	dfo.Session = &state.Session
+
+	return dfo
+}
+
 type ClientResponse struct {
 	resp      *http.Response
 	errorType string
@@ -116,7 +124,7 @@ func (c *ClientResponse) formatApiError(base string, err types.ApiError) string 
 }
 
 func (c *ClientResponse) Err() error {
-	if !c.Ok() {
+	if c.Ok() {
 		panic("fetch: tried to get error from non-error response")
 	}
 
@@ -220,6 +228,8 @@ func Fetch(
 				return nil, err
 			}
 
+			slog.Info("Using session", slog.String("id", sess.SessionID))
+
 			headers["Authorization"] = fmt.Sprintf("User %v", sess.Token)
 		}
 
@@ -281,7 +291,7 @@ func Fetch(
 		ncr := NewClientResponse(resp)
 
 		if !efo.NoErrorOnFail && !ncr.Ok() {
-			return ncr, ncr.Err()
+			return nil, ncr.Err()
 		}
 
 		return ncr, nil

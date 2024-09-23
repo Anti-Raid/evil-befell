@@ -62,12 +62,23 @@ func main() {
 	var commands = make(map[string]*shell.Command[cliData])
 
 	for _, route := range router.Routes() {
+		var completion func(a *shell.ShellCli[cliData], line string, args map[string]string) ([]string, error) = nil
+
+		completer, ok := route.(router.CompletableRoute)
+
+		if ok {
+			completion = func(a *shell.ShellCli[cliData], line string, args map[string]string) ([]string, error) {
+				return completer.Completion(a.Data.State, line, args)
+			}
+		}
+
 		commands[route.Command()] = &shell.Command[cliData]{
 			Description: route.Description(),
 			Args:        route.Arguments(),
 			Run: func(cli *shell.ShellCli[cliData], args map[string]string) error {
 				return router.Goto(route.Command(), cli.Data.State, args)
 			},
+			Completer: completion,
 		}
 	}
 

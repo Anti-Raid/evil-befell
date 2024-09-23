@@ -66,7 +66,7 @@ func (s *StateSessionAuth) AddSession(sess *types.CreateUserSessionResponse) err
 func (s *StateSessionAuth) GetCurrentSession() (*types.CreateUserSessionResponse, error) {
 	s.RemoveExpiredSessions() // Remove expired sessions
 
-	if len(s.UserSessions) > s.CurrentSessionIndex-1 {
+	if s.CurrentSessionIndex >= len(s.UserSessions) {
 		return nil, ErrSessionNotFound
 	}
 
@@ -84,6 +84,17 @@ func (s *StateSessionAuth) SetCurrentSession(i int) error {
 	s.CurrentSessionIndex = i
 
 	return nil
+}
+
+func (s *StateSessionAuth) RemoveSessionIfExists(sessID string) {
+	for i, sess := range s.UserSessions {
+		if sess.SessionID == sessID {
+			s.UserSessions = append(s.UserSessions[:i], s.UserSessions[i+1:]...)
+			break
+		}
+	}
+
+	s.RemoveExpiredSessions() // Remove expired sessions
 }
 
 // Returns if the user is currently authorized into a session

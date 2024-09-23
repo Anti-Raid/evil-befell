@@ -126,3 +126,7 @@ type Route interface {
 	// Renders the route
 	Render(state *state.State, args map[string]string) error
 }
+
+type CompletableRoute interface {
+	Completion(state *state.State, line string, args map[string]string) ([]string, error)
+}

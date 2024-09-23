@@ -3,6 +3,7 @@ package apiexec_ls
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/anti-raid/evil-befall/pkg/api"
 	"github.com/anti-raid/evil-befall/pkg/state"
@@ -98,4 +99,28 @@ func (r *ApiExecLsRoute) Render(state *state.State, args map[string]string) erro
 	fmt.Println(structstring.ConvertStructToString(route.RespType(), ssCfg))
 
 	return nil
+}
+
+func (r *ApiExecLsRoute) Completion(state *state.State, line string, args map[string]string) ([]string, error) {
+	route, ok := args["route"]
+	if !ok || route == "" {
+		routes := make([]string, 0, len(api.GetTestableRoutes()))
+
+		for _, route := range api.GetTestableRoutes() {
+			routes = append(routes, "apiexec.ls "+route.ID())
+		}
+		return routes, nil
+	}
+
+	routeStr := strings.ToLower(route)
+
+	var completions = []string{}
+
+	for _, route := range api.GetTestableRoutes() {
+		if strings.HasPrefix(route.ID(), routeStr) {
+			completions = append(completions, "apiexec.ls "+route.ID())
+		}
+	}
+
+	return completions, nil
 }

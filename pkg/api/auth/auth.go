@@ -101,7 +101,7 @@ func CreateOauth2Login(ctx context.Context, state *state.State, data types.Autho
 }
 
 func GetUserSessions(ctx context.Context, state *state.State) (*types.UserSessionList, error) {
-	resp, err := fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultFetchOptions, fetch.FetchOptions{
+	resp, err := fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultAuthorizedFetchOptions(state), fetch.FetchOptions{
 		Method: "GET",
 		URL:    state.StateFetchOptions.InstanceAPIUrl + "/sessions",
 	})
@@ -126,7 +126,7 @@ func CreateUserSession(ctx context.Context, state *state.State, data *types.Crea
 		return nil, err
 	}
 
-	resp, err := fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultFetchOptions, fetch.FetchOptions{
+	resp, err := fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultAuthorizedFetchOptions(state), fetch.FetchOptions{
 		Method: "POST",
 		URL:    state.StateFetchOptions.InstanceAPIUrl + "/sessions",
 		Body:   body,
@@ -146,25 +146,20 @@ func CreateUserSession(ctx context.Context, state *state.State, data *types.Crea
 }
 
 type RevokeUserSessionData struct {
-	SessionID string `json:"session_id"`
+	SessionID string `json:"path:session_id"`
 }
 
 func RevokeUserSession(ctx context.Context, state *state.State, data *RevokeUserSessionData) error {
-	body, err := fetch.JsonBody(data)
-
-	if err != nil {
-		return err
-	}
-
-	_, err = fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultFetchOptions, fetch.FetchOptions{
-		Method: "POST",
-		URL:    state.StateFetchOptions.InstanceAPIUrl + "/sessions",
-		Body:   body,
+	_, err := fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultAuthorizedFetchOptions(state), fetch.FetchOptions{
+		Method: "DELETE",
+		URL:    state.StateFetchOptions.InstanceAPIUrl + "/sessions/" + data.SessionID,
 	})
 
 	if err != nil {
 		return err
 	}
+
+	state.Session.RemoveSessionIfExists(data.SessionID)
 
 	return nil
 }
