@@ -276,7 +276,7 @@ func setValue(key, typ, v string, setMap map[string]any) error {
 			return fmt.Errorf("failed to decode base64url: %w", err)
 		}
 
-		return setValue(key, strings.TrimPrefix(typ, "[b64url]"), string(decoded), setMap)
+		return setValue(key, strings.Replace(typ, "[b64url]", "", 1), string(decoded), setMap)
 	}
 
 	val, err := parseValueImpl(key, typ, v)
