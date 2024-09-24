@@ -2,8 +2,10 @@ package apiexec_exec
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"reflect"
 	"strconv"
@@ -205,6 +207,7 @@ func (r *ApiExecExecRoute) Render(state *state.State, args map[string]string) er
 //
 // Arrays: KEY::[]{SEP}[VAL1SEPVAL2SEPVAL3]
 func setValue(key, typ, v string, setMap map[string]any) error {
+	// Array support
 	if strings.HasPrefix(typ, "[]") {
 		// Handle array types
 		typ = strings.TrimPrefix(typ, "[]")
@@ -263,17 +266,17 @@ func setValue(key, typ, v string, setMap map[string]any) error {
 		return nil
 	}
 
-	if strings.ToLower(typ) == "json" {
-		var patch any
+	// Base64 URL support
+	if strings.HasPrefix(typ, "[b64url]") {
+		decoder := base64.NewDecoder(base64.URLEncoding, strings.NewReader(v))
 
-		err := json.Unmarshal([]byte(v), &patch)
+		decoded, err := io.ReadAll(decoder)
 
 		if err != nil {
-			return fmt.Errorf("failed to parse %s=%s as JSON: %w", key, v, err)
+			return fmt.Errorf("failed to decode base64url: %w", err)
 		}
 
-		setMap[key] = patch
-		return nil
+		return setValue(key, strings.TrimPrefix(typ, "[b64url]"), string(decoded), setMap)
 	}
 
 	val, err := parseValueImpl(key, typ, v)
@@ -287,7 +290,7 @@ func setValue(key, typ, v string, setMap map[string]any) error {
 }
 
 func parseValueImpl(key, typ, v string) (any, error) {
-	switch typ {
+	switch strings.ToLower(typ) {
 	// Unsigned int types
 	case "uint":
 		uintVal, err := strconv.ParseUint(strings.TrimSpace(v), 10, strconv.IntSize)
@@ -412,6 +415,16 @@ func parseValueImpl(key, typ, v string) (any, error) {
 		}
 
 		return boolVal, nil
+	case "json":
+		var patch any
+
+		err := json.Unmarshal([]byte(v), &patch)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %s=%s as JSON: %w", key, v, err)
+		}
+
+		return patch, nil
 	default:
 		return v, nil // Just set it as a string/default type
 	}
