@@ -210,7 +210,7 @@ func setValue(key, typ, v string, setMap map[string]any) error {
 	// Array support
 	if strings.HasPrefix(typ, "[]") {
 		// Handle array types
-		typ = strings.TrimPrefix(typ, "[]")
+		typ = strings.Replace(typ, "[]", "", 1)
 		// All chars between {} are the separator
 		if typ[0] != '{' {
 			return fmt.Errorf("invalid array type %s", typ)
