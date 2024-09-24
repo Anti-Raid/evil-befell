@@ -255,7 +255,7 @@ func StructToQueryParamsList(s any) map[string]any {
 			val := reflect.ValueOf(s).FieldByName(f.Name).Interface()
 
 			// Add to cols
-			cols[strings.Split(jsonTag, "query:")[0]] = val
+			cols[strings.Split(jsonTag, "query:")[1]] = val
 		}
 
 		return cols

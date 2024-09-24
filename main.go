@@ -63,7 +63,19 @@ func main() {
 	var commands = make(map[string]*shell.Command[cliData])
 
 	for _, route := range router.Routes() {
-		var completion func(a *shell.ShellCli[cliData], line string, args map[string]string) ([]string, error) = nil
+		cmd := &shell.Command[cliData]{
+			Name:        route.Command(),
+			Description: route.Description(),
+			Args:        route.Arguments(),
+			Run: func(cli *shell.ShellCli[cliData], args map[string]string) error {
+				return router.Goto(route.Command(), cli.Data.State, args)
+			},
+		}
+
+		// Default completion
+		var completion = func(a *shell.ShellCli[cliData], line string, args map[string]string) ([]string, error) {
+			return shell.ArgBasedCompletionHandler(a, cmd, line, args)
+		}
 
 		completer, ok := route.(router.CompletableRoute)
 
@@ -73,14 +85,9 @@ func main() {
 			}
 		}
 
-		commands[route.Command()] = &shell.Command[cliData]{
-			Description: route.Description(),
-			Args:        route.Arguments(),
-			Run: func(cli *shell.ShellCli[cliData], args map[string]string) error {
-				return router.Goto(route.Command(), cli.Data.State, args)
-			},
-			Completer: completion,
-		}
+		cmd.Completer = completion
+
+		commands[route.Command()] = cmd
 	}
 
 	root := &shell.ShellCli[cliData]{
@@ -90,8 +97,9 @@ func main() {
 		Prompter: func(r *shell.ShellCli[cliData]) string {
 			return "evil-befall> "
 		},
-		Commands:    commands,
-		HistoryPath: "evil-befall-history.txt",
+		Commands:         commands,
+		HistoryPath:      "evil-befall-history.txt",
+		DebugCompletions: envOrBool("DEBUG_COMPLETIONS", "false") == "true",
 	}
 
 	root.AddCommand("help", root.Help())

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/anti-raid/evil-befall/pkg/api"
 	"github.com/anti-raid/evil-befall/pkg/fetch"
@@ -16,36 +15,9 @@ type CreateIoAuthLoginData struct {
 	PathCode         *string `json:"query:path_code"`
 }
 
-// CreateIoAuthLogin needs to return a struct as it is special
-type CreateIoAuthLoginResponse struct {
-	Headers    map[string][]string `json:"headers"`
-	StatusCode int                 `json:"status_code"`
-	Body       string              `json:"body"`
-}
-
-func CreateIoAuthLogin(ctx context.Context, state *state.State, data *CreateIoAuthLoginData) (*CreateIoAuthLoginResponse, error) {
-	resp, err := fetch.Fetch(ctx, &state.StateFetchOptions, fetch.DefaultFetchOptions, fetch.FetchOptions{
-		Method: "GET",
-		URL:    state.StateFetchOptions.InstanceAPIUrl + "/ioauth/login" + api.StructToQueryParamsString(data),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &CreateIoAuthLoginResponse{
-		Headers:    resp.Headers(),
-		StatusCode: resp.Status(),
-		Body: func() string {
-			str, err := resp.Text()
-
-			if err != nil {
-				return fmt.Errorf("failed to read response body: %w", err).Error()
-			}
-
-			return str
-		}(),
-	}, nil
+func CreateIoAuthLogin(ctx context.Context, state *state.State, data *CreateIoAuthLoginData) (*string, error) {
+	url := state.StateFetchOptions.InstanceAPIUrl + "/ioauth/login" + api.StructToQueryParamsString(data)
+	return &url, nil
 }
 
 func TestAuth(ctx context.Context, state *state.State, data *types.TestAuth) (*types.TestAuthResponse, error) {

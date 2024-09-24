@@ -14,6 +14,7 @@ import (
 	"github.com/anti-raid/shellcli/shell"
 	"github.com/anti-raid/spintrack/structstring"
 	"github.com/anti-raid/spintrack/strutils"
+	"github.com/go-andiamo/splitter"
 )
 
 var ssCfg = structstring.NewDefaultConvertStructToStringConfig()
@@ -200,12 +201,51 @@ func (r *ApiExecExecRoute) Render(state *state.State, args map[string]string) er
 // KEY::TYPE=VALUE for normal values
 // For inputting raw JSON, typ is JSON and value is a json value
 //
-// Note that array support is pretty lacking and so using raw JSON is recommended for arrays
+// # Note that array support is pretty lacking and so using raw JSON is recommended for arrays
+//
+// Arrays: KEY::[]{SEP}[VAL1SEPVAL2SEPVAL3]
 func setValue(key, typ, v string, setMap map[string]any) error {
-	if strings.HasPrefix("[]", typ) {
+	if strings.HasPrefix(typ, "[]") {
 		// Handle array types
 		typ = strings.TrimPrefix(typ, "[]")
-		vals := strings.Split(v, ",")
+		// All chars between {} are the separator
+		if typ[0] != '{' {
+			return fmt.Errorf("invalid array type %s", typ)
+		}
+
+		var sep string
+
+		// Keep going from typ[1] until we hit a }
+		var gotSep bool
+		for i := 1; i < len(typ); i++ {
+			if typ[i] == '}' {
+				sep = typ[1:i]
+				typ = typ[i+1:]
+				gotSep = true
+				break
+			}
+		}
+
+		if !gotSep {
+			return fmt.Errorf("invalid array type %s", typ)
+		}
+
+		if len(sep) > 1 {
+			return fmt.Errorf("only single character separators are supported")
+		}
+
+		var err error
+		parseArraySplitter, err := splitter.NewSplitter(rune(sep[0]), splitter.DoubleQuotesBackSlashEscaped, splitter.SingleQuotesBackSlashEscaped)
+
+		if err != nil {
+			panic("error initializing array tokenizer: " + err.Error())
+		}
+
+		vals, err := parseArraySplitter.Split(v)
+
+		if err != nil {
+			return fmt.Errorf("failed to split array %s: %w", v, err)
+		}
 
 		var arr []any
 
@@ -250,7 +290,7 @@ func parseValueImpl(key, typ, v string) (any, error) {
 	switch typ {
 	// Unsigned int types
 	case "uint":
-		uintVal, err := strconv.ParseUint(v, 10, strconv.IntSize)
+		uintVal, err := strconv.ParseUint(strings.TrimSpace(v), 10, strconv.IntSize)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to uint: %w", key, v, err)
@@ -258,7 +298,7 @@ func parseValueImpl(key, typ, v string) (any, error) {
 
 		return uintVal, nil
 	case "uint8":
-		uintVal, err := strconv.ParseUint(v, 10, 8)
+		uintVal, err := strconv.ParseUint(strings.TrimSpace(v), 10, 8)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to uint8: %w", key, v, err)
@@ -266,7 +306,7 @@ func parseValueImpl(key, typ, v string) (any, error) {
 
 		return uint8(uintVal), nil
 	case "uint16":
-		uintVal, err := strconv.ParseUint(v, 10, 16)
+		uintVal, err := strconv.ParseUint(strings.TrimSpace(v), 10, 16)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to uint16: %w", key, v, err)
@@ -274,7 +314,7 @@ func parseValueImpl(key, typ, v string) (any, error) {
 
 		return uint16(uintVal), nil
 	case "uint32":
-		uintVal, err := strconv.ParseUint(v, 10, 32)
+		uintVal, err := strconv.ParseUint(strings.TrimSpace(v), 10, 32)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to uint32: %w", key, v, err)
@@ -282,7 +322,7 @@ func parseValueImpl(key, typ, v string) (any, error) {
 
 		return uint32(uintVal), nil
 	case "uint64":
-		uintVal, err := strconv.ParseUint(v, 10, 64)
+		uintVal, err := strconv.ParseUint(strings.TrimSpace(v), 10, 64)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to uint64: %w", key, v, err)
@@ -290,7 +330,7 @@ func parseValueImpl(key, typ, v string) (any, error) {
 
 		return uintVal, nil
 	case "uintptr":
-		uintVal, err := strconv.ParseUint(v, 10, strconv.IntSize)
+		uintVal, err := strconv.ParseUint(strings.TrimSpace(v), 10, strconv.IntSize)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to uintptr: %w", key, v, err)
@@ -298,7 +338,7 @@ func parseValueImpl(key, typ, v string) (any, error) {
 
 		return uintptr(uintVal), nil
 	case "byte":
-		uintVal, err := strconv.ParseUint(v, 10, 8)
+		uintVal, err := strconv.ParseUint(strings.TrimSpace(v), 10, 8)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to byte: %w", key, v, err)
@@ -307,7 +347,7 @@ func parseValueImpl(key, typ, v string) (any, error) {
 		return byte(uintVal), nil
 	// Signed int types
 	case "int":
-		intVal, err := strconv.ParseInt(v, 10, strconv.IntSize)
+		intVal, err := strconv.ParseInt(strings.TrimSpace(v), 10, strconv.IntSize)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to int: %w", key, v, err)
@@ -315,7 +355,7 @@ func parseValueImpl(key, typ, v string) (any, error) {
 
 		return intVal, nil
 	case "int8":
-		intVal, err := strconv.ParseInt(v, 10, 8)
+		intVal, err := strconv.ParseInt(strings.TrimSpace(v), 10, 8)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to int8: %w", key, v, err)
@@ -323,7 +363,7 @@ func parseValueImpl(key, typ, v string) (any, error) {
 
 		return int8(intVal), nil
 	case "int16":
-		intVal, err := strconv.ParseInt(v, 10, 16)
+		intVal, err := strconv.ParseInt(strings.TrimSpace(v), 10, 16)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to int16: %w", key, v, err)
@@ -331,7 +371,7 @@ func parseValueImpl(key, typ, v string) (any, error) {
 
 		return int16(intVal), nil
 	case "int32":
-		intVal, err := strconv.ParseInt(v, 10, 32)
+		intVal, err := strconv.ParseInt(strings.TrimSpace(v), 10, 32)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to int32: %w", key, v, err)
@@ -339,13 +379,39 @@ func parseValueImpl(key, typ, v string) (any, error) {
 
 		return int32(intVal), nil
 	case "int64":
-		intVal, err := strconv.ParseInt(v, 10, 64)
+		intVal, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s=%s to int64: %w", key, v, err)
 		}
 
 		return intVal, nil
+	// Floating point types
+	case "float32":
+		floatVal, err := strconv.ParseFloat(strings.TrimSpace(v), 32)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert %s=%s to float32: %w", key, v, err)
+		}
+
+		return float32(floatVal), nil
+	case "float64":
+		floatVal, err := strconv.ParseFloat(strings.TrimSpace(v), 64)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert %s=%s to float64: %w", key, v, err)
+		}
+
+		return floatVal, nil
+	// Other types
+	case "bool", "boolean":
+		boolVal, err := strconv.ParseBool(strings.TrimSpace(v))
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert %s=%s to bool: %w", key, v, err)
+		}
+
+		return boolVal, nil
 	default:
 		return v, nil // Just set it as a string/default type
 	}
@@ -418,9 +484,12 @@ func (r *ApiExecExecRoute) stage2Completion(line string, args map[string]string,
 				case reflect.Ptr:
 					typ = typ.Elem()
 					continue
-				case reflect.Struct:
+				case reflect.Bool:
+					typeOverride = "bool"
+					flag = true
+				case reflect.Struct, reflect.Interface, reflect.Map, reflect.Slice, reflect.Array:
 					typeOverride = "json"
-					fallthrough
+					flag = true
 				default:
 					flag = true
 				}

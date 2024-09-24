@@ -11,8 +11,8 @@ require github.com/anti-raid/spintrack v0.16.0
 require github.com/spewerspew/spew v0.0.0-20230513223542-89b69fbbe2bd // indirect
 
 require (
-	github.com/anti-raid/shellcli v0.0.0-20240923181900-b09659bffa47
-	github.com/go-andiamo/splitter v1.2.5 // indirect
+	github.com/anti-raid/shellcli v0.0.0-20240924224404-46bfe87be6b8
+	github.com/go-andiamo/splitter v1.2.5
 	github.com/peterh/liner v1.2.2 // indirect
 )
 
