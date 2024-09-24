@@ -13,6 +13,7 @@ import (
 	"github.com/anti-raid/evil-befall/pkg/state"
 	"github.com/anti-raid/shellcli/shell"
 	"github.com/anti-raid/spintrack/structstring"
+	"github.com/anti-raid/spintrack/strutils"
 )
 
 var ssCfg = structstring.NewDefaultConvertStructToStringConfig()
@@ -408,8 +409,32 @@ func (r *ApiExecExecRoute) stage2Completion(line string, args map[string]string,
 
 	structFields := structstring.StructFields(reqType, structstring.StructFieldsConfig{
 		FieldFilter: func(f reflect.StructField) (*string, bool) {
+			typeOverride := ""
+
+			typ := f.Type
+			flag := false
+			for !flag {
+				switch typ.Kind() {
+				case reflect.Ptr:
+					typ = typ.Elem()
+					continue
+				case reflect.Struct:
+					typeOverride = "json"
+					fallthrough
+				default:
+					flag = true
+				}
+			}
+
 			jsonTag := f.Tag.Get("json")
-			return &jsonTag, jsonTag != "" && jsonTag != "-"
+
+			candidateName := jsonTag
+
+			if typeOverride != "" {
+				candidateName += "::" + typeOverride
+			}
+
+			return &candidateName, jsonTag != "" && jsonTag != "-"
 		},
 	})
 
@@ -423,7 +448,7 @@ func (r *ApiExecExecRoute) stage2Completion(line string, args map[string]string,
 				continue
 			}
 
-			c = append(c, strings.TrimSpace(strings.Replace(line, untypedArg, "", 1))+" "+candidate+"=")
+			c = append(c, strings.TrimSpace(strutils.ReplaceFromBack(line, untypedArg, "", 1))+" "+candidate+"=")
 		}
 		return
 	}

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	_ "github.com/anti-raid/evil-befall/pkg/api_all"
 	"github.com/anti-raid/evil-befall/pkg/router"
 	_ "github.com/anti-raid/evil-befall/pkg/routes"
 	statelib "github.com/anti-raid/evil-befall/pkg/state"
@@ -94,6 +95,7 @@ func main() {
 	}
 
 	root.AddCommand("help", root.Help())
+	root.AddCommand("getcompletion", root.GetCompletion())
 
 	// Handle --command args
 	command := flag.String("command", "", "Command to run. If unset, will run as shell")

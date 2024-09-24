@@ -46,6 +46,12 @@ github.com/anti-raid/shellcli v0.0.0-20240923152553-d3fa4be8f3ca h1:NXM8mrsJOZdU
 github.com/anti-raid/shellcli v0.0.0-20240923152553-d3fa4be8f3ca/go.mod h1:L+MCk93Nc3QkXDvCeDJH5FezYxXpRCU5lL+/KyKiei4=
 github.com/anti-raid/shellcli v0.0.0-20240923155058-0c90ae38ea82 h1:sYTgd50aYiXHIwbQe58syoQWHqvl2UoBVcPrWh713Pw=
 github.com/anti-raid/shellcli v0.0.0-20240923155058-0c90ae38ea82/go.mod h1:L+MCk93Nc3QkXDvCeDJH5FezYxXpRCU5lL+/KyKiei4=
+github.com/anti-raid/shellcli v0.0.0-20240923181402-e7a17337c6db h1:b9oqGjEWucembBsHMlHIyfLY5o6dwEs2xvLFtd3X7x4=
+github.com/anti-raid/shellcli v0.0.0-20240923181402-e7a17337c6db/go.mod h1:L+MCk93Nc3QkXDvCeDJH5FezYxXpRCU5lL+/KyKiei4=
+github.com/anti-raid/shellcli v0.0.0-20240923181558-be8ed87e646f h1:wvjYefwtLrYRaD1jrPWvqEpNNXIHRrEA1Kozi2EZXYI=
+github.com/anti-raid/shellcli v0.0.0-20240923181558-be8ed87e646f/go.mod h1:L+MCk93Nc3QkXDvCeDJH5FezYxXpRCU5lL+/KyKiei4=
+github.com/anti-raid/shellcli v0.0.0-20240923181900-b09659bffa47 h1:3GZswqNE8hY49D0dPgO+hAGrxsc1CpT1hRBxyXjq2Uk=
+github.com/anti-raid/shellcli v0.0.0-20240923181900-b09659bffa47/go.mod h1:L+MCk93Nc3QkXDvCeDJH5FezYxXpRCU5lL+/KyKiei4=
 github.com/anti-raid/spintrack v0.1.12 h1:5Cgnp8jthOcn/V+I8giPsZ2TN+4+irlBFLM9+EU1vzs=
 github.com/anti-raid/spintrack v0.1.12/go.mod h1:+fYvesbYhl+SybsBJO4A6S5zrFHSTgLL28Ut2NZxqYs=
 github.com/anti-raid/spintrack v0.13.0 h1:mLL2+ruezMK9dz+sOrZuqXb6Ch8s23YW3gB/fLknLOQ=
@@ -58,6 +64,8 @@ github.com/anti-raid/spintrack v0.15.1 h1:R7YJj0EatpbnzQ/62QkTJu4/B/3Z2vd7b2tua0
 github.com/anti-raid/spintrack v0.15.1/go.mod h1:+fYvesbYhl+SybsBJO4A6S5zrFHSTgLL28Ut2NZxqYs=
 github.com/anti-raid/spintrack v0.15.2 h1:6KBsbH01BVjiEXiLTSD3eZ4/p9DkazLjAzfMCeQiw6o=
 github.com/anti-raid/spintrack v0.15.2/go.mod h1:+fYvesbYhl+SybsBJO4A6S5zrFHSTgLL28Ut2NZxqYs=
+github.com/anti-raid/spintrack v0.16.0 h1:HoVkCIWA6y4enBg3is2wNfsCc3n8G7/coOuI/JjRdlg=
+github.com/anti-raid/spintrack v0.16.0/go.mod h1:+fYvesbYhl+SybsBJO4A6S5zrFHSTgLL28Ut2NZxqYs=
 github.com/bahlo/generic-list-go v0.2.0 h1:5sz/EEAK+ls5wF+NeqDpk5+iNdMDXrh3z3nPnH1Wvgk=
 github.com/bahlo/generic-list-go v0.2.0/go.mod h1:2KvAjgMlE5NNynlg/5iLrrCCZ2+5xWbdbCW3pNTGyYg=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
