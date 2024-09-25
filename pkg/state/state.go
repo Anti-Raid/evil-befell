@@ -118,6 +118,10 @@ type UserPref struct {
 	Persist                  *string
 }
 
+type SelectedOptions struct {
+	GuildID string // The guild ID selected by the user
+}
+
 // Stores all the state for the application
 type State struct {
 	// The current location Evil Befall is at
@@ -132,6 +136,14 @@ type State struct {
 	BindAddr string // Bind address with login/logout etc.
 
 	Prefs UserPref
+
+	SelectedOptions SelectedOptions
+}
+
+func (s *State) SetSelectedGuild(guildID string) error {
+	s.SelectedOptions.GuildID = guildID
+	slog.Info("Selected guild ID. Persisting to disk...", slog.String("guild_id", guildID))
+	return s.PersistToDisk()
 }
 
 func (s *State) PersistToDisk() error {
@@ -166,6 +178,8 @@ func (s *State) PersistToDisk() error {
 	if err := os.Rename(path, *s.Prefs.Persist); err != nil {
 		return fmt.Errorf("failed to move file to final location: %w", err)
 	}
+
+	slog.Debug("Persisted state to disk")
 
 	return nil
 }
