@@ -6,6 +6,7 @@ import (
 	"github.com/anti-raid/evil-befall/pkg/routes/apiexec_ls"
 	"github.com/anti-raid/evil-befall/pkg/routes/choose_guild"
 	"github.com/anti-raid/evil-befall/pkg/routes/login"
+	"github.com/anti-raid/evil-befall/pkg/routes/publish"
 	"github.com/anti-raid/evil-befall/pkg/routes/showstate"
 )
 
@@ -15,4 +16,5 @@ func init() {
 	router.AddRoute(&choose_guild.ChooseGuildRoute{})
 	router.AddRoute(&login.LoginRoute{})
 	router.AddRoute(&showstate.ShowStateRoute{})
+	router.AddRoute(&publish.PublishRoute{})
 }

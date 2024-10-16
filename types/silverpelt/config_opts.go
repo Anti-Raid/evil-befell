@@ -61,12 +61,7 @@ type CanonicalColumnType struct {
 	} `json:"Array,omitempty"`
 	Dynamic *struct {
 		Clauses []CanonicalColumnTypeDynamicClause `json:"clauses"`
-	}
-}
-
-type CanonicalInnerColumnTypeStringKindTemplateKind struct {
-	// Template for formatting messages
-	Message *struct{} `json:"Message,omitempty"`
+	} `json:"Dynamic,omitempty"`
 }
 
 type CanonicalInnerColumnTypeStringKind struct {
@@ -76,16 +71,18 @@ type CanonicalInnerColumnTypeStringKind struct {
 	} `json:"Token,omitempty"`
 	Textarea *struct{} `json:"Textarea,omitempty"`
 	Template *struct {
-		Kind CanonicalInnerColumnTypeStringKindTemplateKind `json:"kind"`
+		Kind string `json:"kind"`
+		Ctx  string `json:"ctx"`
 	} `json:"Template,omitempty"`
 	User    *struct{} `json:"User,omitempty"`
 	Channel *struct {
 		AllowedTypes         []discordgo.ChannelType `json:"allowed_types"`
 		NeededBotPermissions ext_types.Permissions   `json:"needed_bot_permissions"`
 	} `json:"Channel,omitempty"`
-	Role    *struct{} `json:"Role,omitempty"`
-	Emoji   *struct{} `json:"Emoji,omitempty"`
-	Message *struct{} `json:"Message,omitempty"`
+	Role     *struct{} `json:"Role,omitempty"`
+	Emoji    *struct{} `json:"Emoji,omitempty"`
+	Message  *struct{} `json:"Message,omitempty"`
+	Modifier *struct{} `json:"Modifier,omitempty"`
 }
 
 type CanonicalInnerColumnType struct {
